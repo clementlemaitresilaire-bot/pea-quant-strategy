@@ -1,0 +1,4 @@
+ML models trained.
+/Users/clement/Desktop/PEA BoursoBank Python/data/artifacts/ml/trade_quality_model.joblib
+/Users/clement/Desktop/PEA BoursoBank Python/data/artifacts/ml/deployment_model.joblib
+/Users/clement/Desktop/PEA BoursoBank Python/data/artifacts/ml/rebalance_model.joblib

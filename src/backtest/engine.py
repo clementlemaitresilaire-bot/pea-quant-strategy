@@ -19,6 +19,7 @@ from src.features.feature_pipeline import get_latest_features
 from src.features.price_features import compute_price_features
 from src.io.loaders import load_universe
 from src.io.market_data import load_all_price_data
+from src.settings import load_config
 
 
 @dataclass
@@ -51,6 +52,46 @@ def _get_rebalance_dates(trading_dates: list[pd.Timestamp], rebalance_frequency:
         return set(pd.to_datetime(rebalance).tolist())
 
     raise ValueError(f"Unsupported rebalance_frequency: {rebalance_frequency}")
+
+
+def _get_next_trading_date(
+    trading_dates: list[pd.Timestamp],
+    current_date: pd.Timestamp,
+) -> pd.Timestamp | None:
+    current_date = pd.Timestamp(current_date)
+    for d in trading_dates:
+        if pd.Timestamp(d) > current_date:
+            return pd.Timestamp(d)
+    return None
+
+
+def _build_signal_execution_schedule(
+    trading_dates: list[pd.Timestamp],
+    rebalance_dates: set[pd.Timestamp],
+    signal_start_date: pd.Timestamp,
+) -> dict[pd.Timestamp, pd.Timestamp]:
+    """
+    Build a mapping:
+        execution_date -> signal_date
+
+    Signal is computed on rebalance date t, and executed on next trading day t+1.
+    """
+    trading_dates = sorted(pd.to_datetime(trading_dates))
+    signal_start_date = pd.Timestamp(signal_start_date)
+
+    schedule: dict[pd.Timestamp, pd.Timestamp] = {}
+
+    for signal_date in sorted(pd.to_datetime(list(rebalance_dates))):
+        if signal_date < signal_start_date:
+            continue
+
+        execution_date = _get_next_trading_date(trading_dates, signal_date)
+        if execution_date is None:
+            continue
+
+        schedule[pd.Timestamp(execution_date)] = pd.Timestamp(signal_date)
+
+    return schedule
 
 
 def _find_first_eligible_rebalance_date(
@@ -95,7 +136,7 @@ def _find_first_eligible_rebalance_date(
     raise ValueError("Could not find any eligible rebalance date after warm-up.")
 
 
-def _select_official_start_date(
+def _select_official_signal_start_date(
     eligible_start_date: pd.Timestamp,
     last_trading_date: pd.Timestamp,
     user_start_date: str | None = None,
@@ -137,7 +178,44 @@ def _normalize_target_weights_to_full_investment(target_df: pd.DataFrame) -> pd.
     return out
 
 
-def _build_benchmark_curve(
+def _build_single_ticker_benchmark_curve(
+    price_df: pd.DataFrame,
+    trading_dates: list[pd.Timestamp],
+    initial_capital: float,
+    ticker: str,
+) -> pd.DataFrame:
+    bench_df = price_df.loc[price_df["ticker"].astype(str) == str(ticker)].copy()
+    bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce")
+    bench_df["adjusted_close"] = pd.to_numeric(bench_df["adjusted_close"], errors="coerce")
+    bench_df = bench_df.dropna(subset=["date", "adjusted_close"]).copy()
+
+    if bench_df.empty:
+        raise ValueError(
+            f"Benchmark ticker '{ticker}' has no price history in the loaded price data. "
+            "Either add this ticker to your data source or switch benchmark.mode."
+        )
+
+    bench_df = (
+        bench_df[["date", "adjusted_close"]]
+        .rename(columns={"adjusted_close": "benchmark_level"})
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+
+    out = pd.DataFrame({"date": trading_dates})
+    out = out.merge(bench_df, on="date", how="left")
+    out["benchmark_level"] = out["benchmark_level"].ffill().bfill()
+
+    first_level = float(out["benchmark_level"].iloc[0]) if not out.empty else np.nan
+    if pd.isna(first_level) or first_level <= 0:
+        out["benchmark_value"] = initial_capital
+    else:
+        out["benchmark_value"] = initial_capital * out["benchmark_level"] / first_level
+
+    return out[["date", "benchmark_value"]].copy()
+
+
+def _build_synthetic_benchmark_curve(
     price_df: pd.DataFrame,
     trading_dates: list[pd.Timestamp],
     initial_capital: float,
@@ -177,6 +255,31 @@ def _build_benchmark_curve(
     return out[["date", "benchmark_value"]].copy()
 
 
+def _build_benchmark_curve(
+    price_df: pd.DataFrame,
+    trading_dates: list[pd.Timestamp],
+    initial_capital: float,
+) -> pd.DataFrame:
+    cfg = load_config()
+
+    if cfg.benchmark.mode == "single_ticker":
+        return _build_single_ticker_benchmark_curve(
+            price_df=price_df,
+            trading_dates=trading_dates,
+            initial_capital=initial_capital,
+            ticker=cfg.benchmark.ticker,
+        )
+
+    if cfg.benchmark.mode == "synthetic_universe":
+        return _build_synthetic_benchmark_curve(
+            price_df=price_df,
+            trading_dates=trading_dates,
+            initial_capital=initial_capital,
+        )
+
+    raise ValueError(f"Unsupported benchmark mode: {cfg.benchmark.mode}")
+
+
 def run_backtest(
     initial_capital: float = 50_000.0,
     rebalance_frequency: str = "monthly",
@@ -193,14 +296,14 @@ def run_backtest(
     price_df = price_df.dropna(subset=["date", "adjusted_close"]).copy()
     price_df = price_df.sort_values(["date", "ticker"]).reset_index(drop=True)
 
-    all_trading_dates = _get_all_trading_dates(price_df)
-    if not all_trading_dates:
+    all_trading_dates_full = _get_all_trading_dates(price_df)
+    if not all_trading_dates_full:
         raise ValueError("No trading dates found in price data.")
 
     if end_date is not None:
-        last_trading_date = max(d for d in all_trading_dates if d <= pd.Timestamp(end_date))
+        last_trading_date = max(d for d in all_trading_dates_full if d <= pd.Timestamp(end_date))
     else:
-        last_trading_date = all_trading_dates[-1]
+        last_trading_date = all_trading_dates_full[-1]
 
     usable_price_df = price_df.loc[price_df["date"] <= last_trading_date].copy()
     all_trading_dates = _get_all_trading_dates(usable_price_df)
@@ -210,33 +313,47 @@ def run_backtest(
     full_features_df["date"] = pd.to_datetime(full_features_df["date"], errors="coerce")
     full_features_df = full_features_df.dropna(subset=["date"]).copy()
 
-    eligible_start_date = _find_first_eligible_rebalance_date(
+    eligible_signal_start_date = _find_first_eligible_rebalance_date(
         full_features_df=full_features_df,
         rebalance_dates=rebalance_dates_all,
     )
 
-    official_start_date = _select_official_start_date(
-        eligible_start_date=eligible_start_date,
+    official_signal_start_date = _select_official_signal_start_date(
+        eligible_start_date=eligible_signal_start_date,
         last_trading_date=last_trading_date,
         user_start_date=start_date,
         target_years=target_backtest_years,
     )
 
+    execution_schedule_all = _build_signal_execution_schedule(
+        trading_dates=all_trading_dates,
+        rebalance_dates=rebalance_dates_all,
+        signal_start_date=official_signal_start_date,
+    )
+
     trading_dates = [
         d for d in all_trading_dates
-        if d >= official_start_date and (end_date is None or d <= pd.Timestamp(end_date))
+        if d > official_signal_start_date and (end_date is None or d <= pd.Timestamp(end_date))
     ]
-    if not trading_dates:
-        raise ValueError("No trading dates found for the measured backtest window.")
+    trading_dates = [pd.Timestamp(d) for d in trading_dates if pd.Timestamp(d) in execution_schedule_all or pd.Timestamp(d) > official_signal_start_date]
 
-    rebalance_dates = {d for d in rebalance_dates_all if d in set(trading_dates)}
-    first_date = trading_dates[0]
+    if not trading_dates:
+        raise ValueError("No trading dates found for the measured backtest window after signal/execution shift.")
+
+    first_execution_date = trading_dates[0]
+
+    execution_schedule = {
+        pd.Timestamp(exec_date): pd.Timestamp(signal_date)
+        for exec_date, signal_date in execution_schedule_all.items()
+        if pd.Timestamp(exec_date) in set(trading_dates)
+    }
 
     if use_seed_state:
         state = initialize_portfolio_state(initial_capital=initial_capital)
+        initial_target_df = pd.DataFrame()
     else:
         sliced_features = full_features_df.loc[
-            pd.to_datetime(full_features_df["date"], errors="coerce") <= first_date
+            pd.to_datetime(full_features_df["date"], errors="coerce") <= official_signal_start_date
         ].copy()
         latest_features_df = get_latest_features(sliced_features)
 
@@ -251,7 +368,7 @@ def run_backtest(
         state = initialize_portfolio_state_from_target_weights_at_date(
             target_df=initial_target_df,
             initial_capital=initial_capital,
-            start_date=first_date,
+            start_date=first_execution_date,
             price_df=usable_price_df,
         )
 
@@ -259,12 +376,14 @@ def run_backtest(
     orders_rows: list[pd.DataFrame] = []
     target_rows: list[pd.DataFrame] = []
 
-    if not use_seed_state:
+    if not use_seed_state and not initial_target_df.empty:
         initial_target_snapshot = initial_target_df.copy()
-        initial_target_snapshot["date"] = first_date
+        initial_target_snapshot["date"] = first_execution_date
+        initial_target_snapshot["signal_date"] = official_signal_start_date
+        initial_target_snapshot["execution_date"] = first_execution_date
         target_rows.append(initial_target_snapshot)
 
-    first_prices = get_latest_prices_until_date(usable_price_df, first_date)
+    first_prices = get_latest_prices_until_date(usable_price_df, first_execution_date)
     starting_portfolio_value = mark_to_market_portfolio(state, first_prices)["portfolio_value"]
     if starting_portfolio_value <= 0:
         starting_portfolio_value = initial_capital
@@ -279,13 +398,11 @@ def run_backtest(
     for current_date in trading_dates:
         latest_prices = get_latest_prices_until_date(usable_price_df, current_date)
 
-        should_rebalance = current_date in rebalance_dates
-        if current_date == first_date and not use_seed_state:
-            should_rebalance = False
+        if current_date in execution_schedule:
+            signal_date = execution_schedule[current_date]
 
-        if should_rebalance:
             sliced_features = full_features_df.loc[
-                pd.to_datetime(full_features_df["date"], errors="coerce") <= current_date
+                pd.to_datetime(full_features_df["date"], errors="coerce") <= signal_date
             ].copy()
             latest_features_df = get_latest_features(sliced_features)
 
@@ -297,6 +414,8 @@ def run_backtest(
                 allocation_result.combined_target_weights_table.copy()
             )
             target_df["date"] = current_date
+            target_df["signal_date"] = signal_date
+            target_df["execution_date"] = current_date
             target_rows.append(target_df)
 
             orders_df = build_order_proposals_at_date(
@@ -307,6 +426,7 @@ def run_backtest(
                 latest_features_df=latest_features_df,
             )
             orders_df["date"] = current_date
+            orders_df["signal_date"] = signal_date
             orders_rows.append(orders_df)
 
             state, _, costs_paid, gross_turnover = execute_orders(
@@ -365,10 +485,11 @@ def run_backtest(
         orders_history=orders_history,
     )
 
-    metrics["official_start_date"] = str(pd.Timestamp(first_date).date())
+    metrics["official_start_date"] = str(pd.Timestamp(first_execution_date).date())
     metrics["official_end_date"] = str(pd.Timestamp(trading_dates[-1]).date())
     metrics["warmup_start_date"] = str(pd.Timestamp(all_trading_dates[0]).date())
-    metrics["eligible_start_date"] = str(pd.Timestamp(eligible_start_date).date())
+    metrics["eligible_start_date"] = str(pd.Timestamp(eligible_signal_start_date).date())
+    metrics["signal_start_date"] = str(pd.Timestamp(official_signal_start_date).date())
     metrics["target_backtest_years"] = float(target_backtest_years)
 
     return BacktestResult(

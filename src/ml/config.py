@@ -9,7 +9,7 @@ from src.settings import DATA_DIR
 @dataclass(frozen=True)
 class MLConfig:
     monthly_only: bool = True
-    min_train_months: int = 36
+    min_train_months: int = 48
     validation_block_months: int = 6
 
     trade_horizon_core_days: int = 63
@@ -17,20 +17,24 @@ class MLConfig:
     deployment_horizon_days: int = 21
     rebalance_horizon_days: int = 21
 
-    trade_auc_floor: float = 0.52
-    deployment_auc_floor: float = 0.51
-    rebalance_auc_floor: float = 0.52
+    # Floors now interpreted as minimum out-of-fold rank IC,
+    # but we keep legacy names for compatibility with existing code.
+    trade_auc_floor: float = 0.02
+    deployment_auc_floor: float = 0.01
+    rebalance_auc_floor: float = 0.02
 
-    # Stronger than before, but still bounded inside overlays.
-    trade_strength: float = 0.26
+    # Optional aliases for readability
+    trade_ic_floor: float = 0.02
+    deployment_ic_floor: float = 0.01
+    rebalance_ic_floor: float = 0.02
 
-    # Deployment ML now matters a bit more, but still cannot dominate.
+    trade_strength: float = 0.18
+
     core_deployment_floor: float = 0.93
     core_deployment_cap: float = 1.10
     opp_deployment_floor: float = 0.88
     opp_deployment_cap: float = 1.18
 
-    # Rebalance ML remains conservative: only reject weak marginal trades.
     rebalance_probability_floor: float = 0.47
 
     artifacts_dir: Path = DATA_DIR / "artifacts" / "ml"

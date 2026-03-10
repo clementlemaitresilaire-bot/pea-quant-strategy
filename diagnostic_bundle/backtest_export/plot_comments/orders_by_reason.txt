@@ -1,0 +1,1 @@
+Le détail des raisons de décision est particulièrement utile pour diagnostiquer les freins du moteur : deadband, coûts, alpha hurdle ou sorties forcées.

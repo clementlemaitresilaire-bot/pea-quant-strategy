@@ -1,0 +1,1 @@
+La vue rebasée en base 100 permet de comparer la dynamique de performance indépendamment du capital de départ. C’est la meilleure lecture pour voir si la surperformance est régulière ou concentrée sur quelques périodes.

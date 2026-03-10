@@ -1,0 +1,104 @@
+project:
+  name: "PEA BoursoBank Python"
+  base_currency: "EUR"
+
+data_provider:
+  provider: "yahoo"
+
+universe:
+  max_names_core: 8
+  max_names_opportunistic: 2
+
+sleeves:
+  core:
+    target_weight: 0.50
+    max_positions: 8
+    min_order_eur: 300.0
+  monetary:
+    target_weight: 0.30
+    max_positions: 3
+    min_order_eur: 500.0
+  opportunistic:
+    target_weight: 0.20
+    max_positions: 2
+    min_order_eur: 300.0
+
+benchmark:
+  mode: "single_ticker"
+  ticker: "^STOXX"
+  synthetic_members_only: false
+
+etf_sleeve:
+  min_internal_weight: 0.15
+  max_internal_weight: 0.50
+  etfs:
+    - ticker: "ETDD.PA"
+      name: "BNP Paribas Easy EURO STOXX 50 UCITS ETF"
+      annual_fee_rate: 0.0010
+      base_weight: 0.40
+    - ticker: "ESE.PA"
+      name: "BNP Paribas Easy S&P 500 UCITS ETF EUR"
+      annual_fee_rate: 0.0014
+      base_weight: 0.40
+    - ticker: "PAEEM.PA"
+      name: "Amundi PEA Emerging Markets ESG Transition UCITS ETF"
+      annual_fee_rate: 0.0030
+      base_weight: 0.20
+
+allocation:
+  max_core_position_weight_total: 0.10
+  max_opp_position_weight_total: 0.10
+  core_rebalance_deadband: 0.015
+
+core_signal:
+  mom12_ex1_weight: 0.30
+  mom6_weight: 0.20
+  mom3_weight: 0.10
+  rel_strength_weight: 0.25
+  vol60_weight: -0.08
+  dd6m_weight: -0.07
+  trend_bonus: 0.20
+  entry_rank_cutoff: 6
+  retention_rank_cutoff: 14
+
+opp_signal:
+  ret5d_trigger: -0.06
+  ret10d_trigger: -0.09
+  ret20d_trigger: -0.12
+
+order_rules:
+  core_cost_hurdle_multiple: 3.0
+  opp_cost_hurdle_multiple: 4.0
+  opp_ttf_cost_hurdle_multiple: 4.5
+
+alpha_guardrails:
+  core_expected_holding_months: 10.0
+  opp_expected_holding_months: 2.0
+
+  core_required_net_alpha_annual: 0.055
+  opp_required_net_alpha_annual: 0.11
+
+  core_min_score_delta_for_replacement: 0.45
+  opp_entry_score_threshold: 0.60
+  opp_keep_score_threshold: 0.15
+
+  core_roundtrip_cost_buffer: 1.00
+  opp_roundtrip_cost_buffer: 1.50
+
+  core_weight_inertia: 0.25
+  opp_weight_inertia: 0.20
+
+  core_min_weight_change: 0.020
+  opp_min_weight_change: 0.020
+
+costs:
+  brokerage_bps: 10.0
+  spread_bps_high: 5.0
+  spread_bps_standard: 10.0
+  spread_bps_lower: 20.0
+  ttf_france_rate: 0.003
+
+reporting:
+  export_signals: true
+  export_orders: true
+  export_backtests: true

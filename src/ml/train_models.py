@@ -4,10 +4,11 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from scipy.stats import spearmanr
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -40,7 +41,7 @@ DEPLOYMENT_FEATURES = [
 ]
 
 
-def _make_logit_pipeline(
+def _make_regression_pipeline(
     numeric_cols: list[str],
     categorical_cols: list[str],
 ) -> Pipeline:
@@ -69,10 +70,13 @@ def _make_logit_pipeline(
         ]
     )
 
-    model = LogisticRegression(
-        max_iter=2000,
-        C=1.4,
-        class_weight="balanced",
+    model = HistGradientBoostingRegressor(
+        loss="squared_error",
+        learning_rate=0.04,
+        max_depth=3,
+        max_iter=250,
+        min_samples_leaf=30,
+        l2_regularization=0.15,
         random_state=42,
     )
 
@@ -99,13 +103,24 @@ def _clean_feature_frame(
     return out[numeric_cols + categorical_cols].copy()
 
 
-def _walk_forward_oof(
+def _compute_rank_ic(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    valid = np.isfinite(y_true) & np.isfinite(y_pred)
+    if valid.sum() < 10:
+        return float("nan")
+
+    corr, _ = spearmanr(y_true[valid], y_pred[valid])
+    if corr is None or not np.isfinite(corr):
+        return float("nan")
+    return float(corr)
+
+
+def _walk_forward_oof_regression(
     df: pd.DataFrame,
     feature_cols: list[str],
     target_col: str,
     numeric_cols: list[str],
     categorical_cols: list[str],
-) -> tuple[np.ndarray, float]:
+) -> tuple[np.ndarray, float, float]:
     cfg = get_ml_config()
 
     data = df.copy()
@@ -131,39 +146,43 @@ def _walk_forward_oof(
         train_df = data.loc[train_mask].copy()
         test_df = data.loc[test_mask].copy()
 
-        if train_df[target_col].nunique() < 2 or test_df.empty:
+        if train_df.empty or test_df.empty:
             continue
 
         X_train = _clean_feature_frame(train_df[feature_cols], numeric_cols, categorical_cols)
-        y_train = train_df[target_col].astype(int)
+        y_train = pd.to_numeric(train_df[target_col], errors="coerce").to_numpy()
+
         X_test = _clean_feature_frame(test_df[feature_cols], numeric_cols, categorical_cols)
 
-        pipe = _make_logit_pipeline(numeric_cols, categorical_cols)
+        pipe = _make_regression_pipeline(numeric_cols, categorical_cols)
         pipe.fit(X_train, y_train)
 
-        oof[test_df.index] = pipe.predict_proba(X_test)[:, 1]
+        oof[test_df.index] = pipe.predict(X_test)
 
-    valid = ~np.isnan(oof)
-    auc = np.nan
-    if valid.sum() > 0 and data.loc[valid, target_col].nunique() >= 2:
-        auc = roc_auc_score(data.loc[valid, target_col], oof[valid])
+    y_true = pd.to_numeric(data[target_col], errors="coerce").to_numpy()
 
-    return oof, float(auc) if not np.isnan(auc) else float("nan")
+    ic = _compute_rank_ic(y_true, oof)
+
+    valid = np.isfinite(y_true) & np.isfinite(oof)
+    rmse = float(np.sqrt(mean_squared_error(y_true[valid], oof[valid]))) if valid.sum() > 0 else float("nan")
+
+    return oof, ic, rmse
 
 
-def _fit_and_save(
+def _fit_and_save_regression(
     df: pd.DataFrame,
     feature_cols: list[str],
     target_col: str,
     name: str,
-    auc_floor: float,
+    ic_floor: float,
     numeric_cols: list[str],
     categorical_cols: list[str],
 ) -> None:
     data = df.dropna(subset=["date", target_col]).copy()
-    data[target_col] = pd.to_numeric(data[target_col], errors="coerce").fillna(0).astype(int)
+    data[target_col] = pd.to_numeric(data[target_col], errors="coerce")
+    data = data.dropna(subset=[target_col]).copy()
 
-    oof, auc = _walk_forward_oof(
+    oof, ic, rmse = _walk_forward_oof_regression(
         data,
         feature_cols,
         target_col,
@@ -171,22 +190,24 @@ def _fit_and_save(
         categorical_cols=categorical_cols,
     )
 
-    enabled = bool(np.isfinite(auc) and auc >= auc_floor)
+    enabled = bool(np.isfinite(ic) and ic >= ic_floor)
 
     X = _clean_feature_frame(data[feature_cols], numeric_cols, categorical_cols)
-    y = data[target_col].astype(int)
+    y = pd.to_numeric(data[target_col], errors="coerce").to_numpy()
 
-    pipe = _make_logit_pipeline(numeric_cols, categorical_cols)
-    if y.nunique() >= 2:
-        pipe.fit(X, y)
+    pipe = _make_regression_pipeline(numeric_cols, categorical_cols)
+    pipe.fit(X, y)
 
     artifact = {
         "name": name,
         "enabled": enabled,
-        "oof_auc": auc,
+        "oof_ic": ic,
+        "oof_rmse": rmse,
         "feature_columns": feature_cols,
         "numeric_columns": numeric_cols,
         "categorical_columns": categorical_cols,
+        "target_column": target_col,
+        "model_type": "regression",
         "model": pipe,
     }
     joblib.dump(artifact, model_path(name))
@@ -196,9 +217,11 @@ def _fit_and_save(
             {
                 "model_name": name,
                 "enabled": enabled,
-                "oof_auc": auc,
+                "oof_ic": ic,
+                "oof_rmse": rmse,
                 "n_samples": len(data),
-                "positive_rate": float(y.mean()) if len(y) > 0 else np.nan,
+                "target_mean": float(np.nanmean(y)) if len(y) > 0 else np.nan,
+                "target_std": float(np.nanstd(y)) if len(y) > 0 else np.nan,
             }
         ]
     )
@@ -212,32 +235,32 @@ def train_all_models() -> None:
     deployment_df = build_deployment_dataset()
     rebalance_df = build_rebalance_dataset()
 
-    _fit_and_save(
+    _fit_and_save_regression(
         df=trade_df,
         feature_cols=COMMON_SIGNAL_FEATURES,
-        target_col="target",
+        target_col="target_value",
         name="trade_quality_model",
-        auc_floor=cfg.trade_auc_floor,
+        ic_floor=cfg.trade_auc_floor,
         numeric_cols=NUMERIC_SIGNAL_FEATURES,
         categorical_cols=CATEGORICAL_SIGNAL_FEATURES,
     )
 
-    _fit_and_save(
+    _fit_and_save_regression(
         df=deployment_df,
         feature_cols=DEPLOYMENT_FEATURES,
-        target_col="target",
+        target_col="target_value",
         name="deployment_model",
-        auc_floor=cfg.deployment_auc_floor,
+        ic_floor=cfg.deployment_auc_floor,
         numeric_cols=DEPLOYMENT_FEATURES,
         categorical_cols=[],
     )
 
-    _fit_and_save(
+    _fit_and_save_regression(
         df=rebalance_df,
         feature_cols=REBALANCE_FEATURES,
-        target_col="target",
+        target_col="target_value",
         name="rebalance_model",
-        auc_floor=cfg.rebalance_auc_floor,
+        ic_floor=cfg.rebalance_auc_floor,
         numeric_cols=NUMERIC_REBALANCE_FEATURES,
         categorical_cols=CATEGORICAL_REBALANCE_FEATURES,
     )

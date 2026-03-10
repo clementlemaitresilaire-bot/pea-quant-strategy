@@ -379,46 +379,6 @@ def initialize_portfolio_state_from_target_weights_at_date(
     )
 
 
-def initialize_portfolio_state_from_seed_at_date(
-    initial_capital: float,
-    start_date: pd.Timestamp,
-    price_df: pd.DataFrame,
-) -> PortfolioState:
-    seed_df = _load_seed_snapshot_raw()
-    if seed_df.empty:
-        return initialize_portfolio_state(initial_capital=initial_capital)
-
-    start_prices = get_latest_prices_until_date(price_df, pd.Timestamp(start_date))
-    if not start_prices:
-        return initialize_portfolio_state(initial_capital=initial_capital)
-
-    work = seed_df.copy()
-    work["hist_price"] = work["ticker"].map(start_prices)
-    work["hist_price"] = pd.to_numeric(work["hist_price"], errors="coerce")
-    work = work.dropna(subset=["hist_price"]).copy()
-    work = work.loc[work["hist_price"] > 0].copy()
-
-    if work.empty:
-        return initialize_portfolio_state(initial_capital=initial_capital)
-
-    if "current_weight_total" in work.columns and float(work["current_weight_total"].sum()) > 0:
-        work["seed_weight"] = pd.to_numeric(work["current_weight_total"], errors="coerce").fillna(0.0)
-    else:
-        work["seed_weight"] = pd.to_numeric(work["market_value"], errors="coerce").fillna(0.0)
-
-    work = work.loc[work["seed_weight"] > 0].copy()
-    if work.empty:
-        return initialize_portfolio_state(initial_capital=initial_capital)
-
-    work["target_weight_final"] = work["seed_weight"]
-    return initialize_portfolio_state_from_target_weights_at_date(
-        target_df=work[["ticker", "bucket", "target_weight_final"]].copy(),
-        initial_capital=initial_capital,
-        start_date=start_date,
-        price_df=price_df,
-    )
-
-
 def initialize_portfolio_state_from_seed() -> PortfolioState:
     seed_df = _load_seed_snapshot_raw()
     if seed_df.empty:
@@ -465,72 +425,6 @@ def _get_sleeve_ref(state: PortfolioState, bucket: str) -> SleeveState:
 
 def mark_to_market_holdings(holdings: dict[str, float], latest_prices: dict[str, float]) -> float:
     return float(sum(float(qty) * float(latest_prices.get(ticker, 0.0)) for ticker, qty in holdings.items()))
-
-
-def build_synthetic_portfolio_snapshot(
-    state: PortfolioState,
-    latest_prices: dict[str, float],
-    current_date: pd.Timestamp,
-    universe_df: pd.DataFrame,
-) -> pd.DataFrame:
-    rows = []
-
-    total_value = mark_to_market_portfolio(state, latest_prices)["portfolio_value"]
-    if total_value <= 0:
-        total_value = 1.0
-
-    bucket_map = {
-        "core": state.core,
-        "monetary": state.monetary,
-        "opportunistic": state.opportunistic,
-    }
-
-    for bucket, sleeve in bucket_map.items():
-        bucket_value = sum(float(qty) * float(latest_prices.get(ticker, 0.0)) for ticker, qty in sleeve.holdings.items())
-        if bucket_value <= 0:
-            bucket_value = 1.0
-
-        for ticker, qty in sleeve.holdings.items():
-            price = float(latest_prices.get(ticker, 0.0))
-            mv = float(qty) * price
-
-            uni = universe_df.loc[universe_df["ticker"] == ticker]
-            if not uni.empty and "sector" in uni.columns and pd.notna(uni["sector"].iloc[0]):
-                sector = str(uni["sector"].iloc[0])
-            else:
-                sector = "Unknown"
-            if sector.strip() == "":
-                sector = "Unknown"
-
-            ttf_flag = bool(uni["ttf_flag"].iloc[0]) if not uni.empty and "ttf_flag" in uni.columns else False
-
-            rows.append(
-                {
-                    "date": current_date,
-                    "ticker": str(ticker),
-                    "bucket": str(bucket),
-                    "quantity": qty,
-                    "avg_price": price,
-                    "last_price": price,
-                    "market_value": mv,
-                    "current_weight_total": mv / total_value,
-                    "current_weight_bucket": mv / bucket_value,
-                    "unrealized_pnl_pct": 0.0,
-                    "days_held": 0,
-                    "entry_date": current_date,
-                    "entry_signal_type": "",
-                    "sector": sector,
-                    "ttf_flag": ttf_flag,
-                }
-            )
-
-    out = pd.DataFrame(rows)
-    if not out.empty:
-        out["ticker"] = out["ticker"].astype(str)
-        out["bucket"] = out["bucket"].fillna("unknown").astype(str)
-        out["sector"] = out["sector"].fillna("Unknown").astype(str)
-        out.loc[out["sector"].str.strip() == "", "sector"] = "Unknown"
-    return out
 
 
 def mark_to_market_portfolio(state: PortfolioState, latest_prices: dict[str, float]) -> dict[str, float]:
@@ -765,9 +659,10 @@ def build_order_proposals_at_date(
         shares_est = math.floor(order_value_abs / last_price) if action != "HOLD" and last_price > 0 else 0
         effective_order_value = shares_est * last_price
 
+        side_for_cost = "BUY" if action == "BUY" else "SELL"
         cost_est = estimate_transaction_cost(
             order_value=effective_order_value,
-            side="BUY" if action == "BUY" else "SELL",
+            side=side_for_cost,
             ttf_flag=ttf_flag,
             liquidity_bucket=str(row["liquidity_bucket"]),
         )
@@ -868,6 +763,26 @@ def build_order_proposals_at_date(
     return orders_df
 
 
+def _recompute_transaction_cost(
+    action: str,
+    gross_amount: float,
+    ttf_flag: bool,
+    liquidity_bucket: str,
+) -> tuple[float, float, float, float]:
+    cost = estimate_transaction_cost(
+        order_value=float(gross_amount),
+        side=str(action),
+        ttf_flag=bool(ttf_flag),
+        liquidity_bucket=str(liquidity_bucket),
+    )
+    return (
+        float(cost.brokerage_est),
+        float(cost.ttf_est),
+        float(cost.spread_est),
+        float(cost.total_cost_est),
+    )
+
+
 def execute_orders(
     state: PortfolioState,
     orders_df: pd.DataFrame,
@@ -886,6 +801,11 @@ def execute_orders(
     if executable.empty:
         return state, pd.DataFrame(), 0.0, 0.0
 
+    executable["ttf_flag"] = executable.get("ttf_est", 0.0).fillna(0.0) > 0.0
+    executable["liquidity_bucket"] = executable.get("spread_est", pd.Series(index=executable.index, dtype=float)).apply(
+        lambda x: "standard"
+    )
+
     fills = []
     costs_paid = 0.0
     gross_turnover = 0.0
@@ -897,79 +817,110 @@ def execute_orders(
         ticker = str(row["ticker"])
         bucket = str(row["bucket"])
         action = str(row["action"])
-        shares = float(row["shares_est"])
+        shares_requested = float(row["shares_est"])
         price = float(latest_prices.get(ticker, 0.0))
-        total_cost = float(row["total_cost_est"])
 
-        if price <= 0 or shares <= 0:
+        if action != "SELL":
+            continue
+        if price <= 0 or shares_requested <= 0:
             continue
 
         sleeve = _get_sleeve_ref(state, bucket)
-        current_qty = sleeve.holdings.get(ticker, 0.0)
+        current_qty = float(sleeve.holdings.get(ticker, 0.0))
+        shares_to_sell = min(current_qty, shares_requested)
 
-        if action == "SELL":
-            shares_to_sell = min(current_qty, shares)
-            if shares_to_sell <= 0:
-                continue
+        if shares_to_sell <= 0:
+            continue
 
-            gross = shares_to_sell * price
-            state.general_cash += gross - total_cost
-            new_qty = current_qty - shares_to_sell
+        gross = shares_to_sell * price
+        brokerage, ttf, spread, total_cost = _recompute_transaction_cost(
+            action="SELL",
+            gross_amount=gross,
+            ttf_flag=bool(row.get("ttf_est", 0.0) > 0),
+            liquidity_bucket="standard",
+        )
 
-            if new_qty > 0:
-                sleeve.holdings[ticker] = new_qty
-            else:
-                sleeve.holdings.pop(ticker, None)
+        state.general_cash += gross - total_cost
+        new_qty = current_qty - shares_to_sell
 
-            costs_paid += total_cost
-            gross_turnover += gross
+        if new_qty > 0:
+            sleeve.holdings[ticker] = new_qty
+        else:
+            sleeve.holdings.pop(ticker, None)
 
-            fills.append(
-                {
-                    "ticker": ticker,
-                    "bucket": bucket,
-                    "action": "SELL",
-                    "shares_filled": shares_to_sell,
-                    "fill_price": price,
-                    "gross_amount": gross,
-                    "total_cost": total_cost,
-                    "net_cash_impact": gross - total_cost,
-                }
-            )
+        costs_paid += total_cost
+        gross_turnover += gross
+
+        fills.append(
+            {
+                "ticker": ticker,
+                "bucket": bucket,
+                "action": "SELL",
+                "shares_filled": shares_to_sell,
+                "fill_price": price,
+                "gross_amount": gross,
+                "brokerage": brokerage,
+                "ttf": ttf,
+                "spread": spread,
+                "total_cost": total_cost,
+                "net_cash_impact": gross - total_cost,
+            }
+        )
 
     for _, row in executable.iterrows():
         ticker = str(row["ticker"])
         bucket = str(row["bucket"])
         action = str(row["action"])
-        shares = float(row["shares_est"])
+        shares_requested = float(row["shares_est"])
         price = float(latest_prices.get(ticker, 0.0))
-        total_cost = float(row["total_cost_est"])
 
         if action != "BUY":
             continue
-        if price <= 0 or shares <= 0:
+        if price <= 0 or shares_requested <= 0:
             continue
 
         sleeve = _get_sleeve_ref(state, bucket)
-        gross = shares * price
-        cash_needed = gross + total_cost
 
-        if state.general_cash < cash_needed:
-            max_affordable_shares = math.floor(max((state.general_cash - total_cost), 0.0) / price)
-            if max_affordable_shares <= 0:
-                continue
+        max_affordable_shares = int(math.floor(state.general_cash / price))
+        if max_affordable_shares <= 0:
+            continue
 
-            shares = float(max_affordable_shares)
-            gross = shares * price
-            if float(row["shares_est"]) > 0:
-                total_cost = total_cost * (shares / float(row["shares_est"]))
+        shares_to_buy = min(int(math.floor(shares_requested)), max_affordable_shares)
+        if shares_to_buy <= 0:
+            continue
+
+        while shares_to_buy > 0:
+            gross = shares_to_buy * price
+            brokerage, ttf, spread, total_cost = _recompute_transaction_cost(
+                action="BUY",
+                gross_amount=gross,
+                ttf_flag=bool(row.get("ttf_est", 0.0) > 0),
+                liquidity_bucket="standard",
+            )
             cash_needed = gross + total_cost
 
-            if state.general_cash < cash_needed:
-                continue
+            if cash_needed <= state.general_cash + 1e-12:
+                break
+
+            shares_to_buy -= 1
+
+        if shares_to_buy <= 0:
+            continue
+
+        gross = shares_to_buy * price
+        brokerage, ttf, spread, total_cost = _recompute_transaction_cost(
+            action="BUY",
+            gross_amount=gross,
+            ttf_flag=bool(row.get("ttf_est", 0.0) > 0),
+            liquidity_bucket="standard",
+        )
+        cash_needed = gross + total_cost
+
+        if cash_needed > state.general_cash + 1e-12:
+            continue
 
         state.general_cash -= cash_needed
-        sleeve.holdings[ticker] = sleeve.holdings.get(ticker, 0.0) + shares
+        sleeve.holdings[ticker] = float(sleeve.holdings.get(ticker, 0.0)) + float(shares_to_buy)
 
         costs_paid += total_cost
         gross_turnover += gross
@@ -979,9 +930,12 @@ def execute_orders(
                 "ticker": ticker,
                 "bucket": bucket,
                 "action": "BUY",
-                "shares_filled": shares,
+                "shares_filled": float(shares_to_buy),
                 "fill_price": price,
                 "gross_amount": gross,
+                "brokerage": brokerage,
+                "ttf": ttf,
+                "spread": spread,
                 "total_cost": total_cost,
                 "net_cash_impact": -(gross + total_cost),
             }
@@ -991,3 +945,7 @@ def execute_orders(
     fills_df = pd.DataFrame(fills)
 
     return state, fills_df, costs_paid, gross_turnover
+
+
+if __name__ == "__main__":
+    print("simulator ok")

@@ -29,6 +29,8 @@ class AllocationResult:
 
 def _softmax_weights(scores: pd.Series, temperature: float = 1.0) -> pd.Series:
     x = pd.to_numeric(scores, errors="coerce").fillna(0.0).astype(float)
+    if len(x) == 0:
+        return x
     x = x - x.max()
     exp_x = np.exp(x / max(float(temperature), 1e-6))
     total = float(exp_x.sum())
@@ -66,6 +68,76 @@ def _iterative_cap_and_renorm(
     return w
 
 
+def _restore_minimum_core_selection(core_signal_df: pd.DataFrame) -> pd.DataFrame:
+    from src.settings import load_config
+
+    out = core_signal_df.copy()
+    if out.empty:
+        return out
+
+    if "selected_core_final" not in out.columns:
+        out["selected_core_final"] = False
+
+    selected_mask = out["selected_core_final"].fillna(False).astype(bool)
+    if selected_mask.any():
+        return out
+
+    cfg = load_config()
+    max_positions = int(min(cfg.sleeves["core"].max_positions, max(len(out), 1)))
+
+    sort_cols: list[str] = []
+    ascending: list[bool] = []
+
+    if "entry_candidate" in out.columns:
+        sort_cols.append("entry_candidate")
+        ascending.append(False)
+
+    if "retention_candidate" in out.columns:
+        sort_cols.append("retention_candidate")
+        ascending.append(False)
+
+    if "currently_held_core" in out.columns:
+        sort_cols.append("currently_held_core")
+        ascending.append(False)
+
+    if "rank_core" in out.columns:
+        sort_cols.append("rank_core")
+        ascending.append(True)
+
+    if "core_score" in out.columns:
+        sort_cols.append("core_score")
+        ascending.append(False)
+
+    if not sort_cols:
+        return out
+
+    fallback = out.sort_values(sort_cols, ascending=ascending).head(max_positions).copy()
+    if fallback.empty:
+        return out
+
+    out["selected_core_final"] = out["ticker"].isin(fallback["ticker"])
+
+    if "selection_reason" not in out.columns:
+        out["selection_reason"] = "NOT_SELECTED"
+
+    out.loc[out["selected_core_final"], "selection_reason"] = "ML_FALLBACK_SELECTION"
+    return out
+
+
+def _attach_trade_quality_signal(out: pd.DataFrame, selected: pd.DataFrame) -> pd.DataFrame:
+    signal_col = None
+    for candidate in ["trade_quality_signal", "trade_quality_proba", "ml_trade_quality_proba"]:
+        if candidate in selected.columns:
+            signal_col = candidate
+            break
+
+    if signal_col is None:
+        return out
+
+    tmp = selected[["ticker", signal_col]].drop_duplicates(subset=["ticker"]).copy()
+    return out.merge(tmp, on="ticker", how="left")
+
+
 def _build_core_target_weights(
     core_signal_df: pd.DataFrame,
     regime_state,
@@ -78,16 +150,23 @@ def _build_core_target_weights(
     sleeve_target = config.sleeves["core"].target_weight
 
     selected = core_signal_df.loc[core_signal_df["selected_core_final"] == True].copy()
+
     if selected.empty:
-        raise ValueError("No selected core names available for allocation.")
+        core_signal_df = _restore_minimum_core_selection(core_signal_df)
+        selected = core_signal_df.loc[core_signal_df["selected_core_final"] == True].copy()
+
+    if selected.empty:
+        raise ValueError("No selected core names available for allocation even after fallback.")
 
     selected = selected.sort_values("rank_core").reset_index(drop=True)
+
     selected["rank_floor"] = selected["rank_core"].map(
         lambda r: 1.0 if r <= 2 else (0.8 if r <= 4 else (0.6 if r <= 6 else 0.45))
     )
 
     score_weights = _softmax_weights(selected["core_score"], temperature=0.70)
     rank_weights = selected["rank_floor"] / selected["rank_floor"].sum()
+
     selected["target_weight_raw"] = 0.65 * score_weights + 0.35 * rank_weights
 
     target_core_weight_total = sleeve_target * float(regime_state.target_core_deployment) * float(deployment_multiplier)
@@ -100,7 +179,7 @@ def _build_core_target_weights(
     )
 
     selected["bucket"] = "core"
-    selected["reason"] = selected["selection_reason"]
+    selected["reason"] = selected.get("selection_reason", "SELECTED")
 
     out = selected[
         [
@@ -114,13 +193,7 @@ def _build_core_target_weights(
         ]
     ].rename(columns={"rank_core": "rank", "core_score": "score"}).sort_values("rank").reset_index(drop=True)
 
-    if "ml_trade_quality_proba" in selected.columns:
-        out = out.merge(
-            selected[["ticker", "ml_trade_quality_proba"]],
-            on="ticker",
-            how="left",
-        )
-
+    out = _attach_trade_quality_signal(out, selected)
     return out, float(out["target_weight_final"].sum())
 
 
@@ -136,7 +209,6 @@ def _build_monetary_target_weights(monetary_signal_df: pd.DataFrame) -> tuple[pd
 
     df["target_weight_raw"] = df["target_internal_weight_raw"] * sleeve_target
     df["target_weight_final"] = df["target_internal_weight_final"] * sleeve_target
-
     df["bucket"] = "monetary"
     df["reason"] = df["selection_reason"]
     df["score"] = df["etf_score"]
@@ -197,14 +269,9 @@ def _build_opp_target_weights(
     equal_weights = pd.Series(np.ones(len(selected)) / len(selected), index=selected.index)
 
     selected["target_weight_raw"] = (
-        0.50 * score_weights
-        + 0.30 * inv_vol_weights
-        + 0.20 * equal_weights
+        0.50 * score_weights + 0.30 * inv_vol_weights + 0.20 * equal_weights
     )
 
-    # Règle demandée :
-    # - sleeve opp déployée à 100% en green/orange
-    # - réduite seulement en red
     if regime_state.regime == "red":
         opp_deployment = 0.35
         hard_cap = min(float(alloc_cfg.max_opp_position_weight_total), 0.08)
@@ -240,7 +307,7 @@ def _build_opp_target_weights(
         selected["annual_fee_rate"] = 0.0030
 
     selected["bucket"] = "opportunistic"
-    selected["reason"] = selected["selection_reason"]
+    selected["reason"] = selected.get("selection_reason", "SELECTED")
 
     out = selected[
         [
@@ -255,13 +322,7 @@ def _build_opp_target_weights(
         ]
     ].rename(columns={"rank_opp": "rank", "opp_score_net": "score"}).sort_values("rank").reset_index(drop=True)
 
-    if "ml_trade_quality_proba" in selected.columns:
-        out = out.merge(
-            selected[["ticker", "ml_trade_quality_proba"]],
-            on="ticker",
-            how="left",
-        )
-
+    out = _attach_trade_quality_signal(out, selected)
     return out, float(out["target_weight_final"].sum())
 
 
@@ -290,6 +351,8 @@ def build_full_target_allocation(
         )
 
     core_signal_df = apply_trade_quality_overlay(core_signal_df, bucket="core")
+    core_signal_df = _restore_minimum_core_selection(core_signal_df)
+
     opp_signal_df = apply_trade_quality_overlay(opp_signal_df, bucket="opportunistic")
 
     regime_state = determine_market_regime(
@@ -299,27 +362,28 @@ def build_full_target_allocation(
 
     try:
         deploy_adj = get_live_deployment_adjustment(
-            regime_state=regime_state,
-            latest_features_df=latest_features_df if latest_features_df is not None else pd.DataFrame(),
-            universe_df=universe_df if universe_df is not None else pd.DataFrame(),
+            feature_df=latest_features_df if latest_features_df is not None else pd.DataFrame(),
         )
     except Exception:
         deploy_adj = {
-            "deployment_ml_proba": 0.50,
+            "deployment_ml_signal": 0.0,
             "core_multiplier": 1.00,
             "opp_multiplier": 1.00,
+            "deployment_regime": "neutral",
         }
 
     core_table, target_core_weight_total = _build_core_target_weights(
         core_signal_df,
         regime_state,
-        deployment_multiplier=float(deploy_adj["core_multiplier"]),
+        deployment_multiplier=float(deploy_adj.get("core_multiplier", 1.00)),
     )
+
     monetary_table, target_monetary_weight_total = _build_monetary_target_weights(monetary_signal_df)
+
     opp_table, target_opp_weight_total = _build_opp_target_weights(
         opp_signal_df,
         regime_state,
-        deployment_multiplier=float(deploy_adj["opp_multiplier"]),
+        deployment_multiplier=float(deploy_adj.get("opp_multiplier", 1.00)),
     )
 
     frames = [core_table, monetary_table]
@@ -329,14 +393,14 @@ def build_full_target_allocation(
     combined = pd.concat(frames, ignore_index=True).copy()
     combined = combined.sort_values(["bucket", "rank", "ticker"]).reset_index(drop=True)
 
-    combined["deployment_ml_proba"] = float(deploy_adj.get("deployment_ml_proba", 0.50))
+    combined["deployment_ml_signal"] = float(deploy_adj.get("deployment_ml_signal", 0.0))
+    combined["deployment_ml_proba"] = float(deploy_adj.get("deployment_ml_signal", 0.5))
     combined["core_deployment_multiplier_ml"] = float(deploy_adj.get("core_multiplier", 1.00))
     combined["opp_deployment_multiplier_ml"] = float(deploy_adj.get("opp_multiplier", 1.00))
+    combined["deployment_regime_ml"] = str(deploy_adj.get("deployment_regime", "neutral"))
 
     target_total_invested_weight = (
-        target_core_weight_total
-        + target_monetary_weight_total
-        + target_opp_weight_total
+        target_core_weight_total + target_monetary_weight_total + target_opp_weight_total
     )
     implied_cash_weight = 1.0 - target_total_invested_weight
 
@@ -359,13 +423,13 @@ if __name__ == "__main__":
     result = build_full_target_allocation()
 
     print("\n=== Allocation Regime ===")
-    print(f"Regime                     : {result.regime}")
-    print(f"Target core deployment     : {result.target_core_deployment:.2%}")
-    print(f"Target core weight total   : {result.target_core_weight_total:.2%}")
-    print(f"Target monetary weight     : {result.target_monetary_weight_total:.2%}")
-    print(f"Target opp weight total    : {result.target_opp_weight_total:.2%}")
-    print(f"Target invested total      : {result.target_total_invested_weight:.2%}")
-    print(f"Implied cash weight        : {result.implied_cash_weight:.2%}")
+    print(f"Regime : {result.regime}")
+    print(f"Target core deployment : {result.target_core_deployment:.2%}")
+    print(f"Target core weight total : {result.target_core_weight_total:.2%}")
+    print(f"Target monetary weight : {result.target_monetary_weight_total:.2%}")
+    print(f"Target opp weight total : {result.target_opp_weight_total:.2%}")
+    print(f"Target invested total : {result.target_total_invested_weight:.2%}")
+    print(f"Implied cash weight : {result.implied_cash_weight:.2%}")
 
     print("\n=== Core Target Weights ===")
     print(result.core_target_weights_table)

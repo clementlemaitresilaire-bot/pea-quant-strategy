@@ -1,0 +1,1 @@
+Le turnover mensuel et les coûts mensuels sont séparés pour rester lisibles. Cette figure aide à identifier les épisodes de sur-rotation et les périodes où l’exécution détruit du rendement.
