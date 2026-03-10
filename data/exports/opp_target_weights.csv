@@ -1,3 +1,1 @@
-ticker,bucket,rank,score,annual_fee_rate,target_weight_raw,target_weight_final,reason,ml_trade_quality_proba
-PALAT.PA,opportunistic,1,0.6051126592490689,0.003,0.5,0.1,NEW_OPP_ENTRY,0.5
-PANX.PA,opportunistic,2,0.39749505320895917,0.003,0.5,0.1,NEW_OPP_ENTRY,0.5
+ticker,bucket,rank,score,annual_fee_rate,target_weight_raw,target_weight_final,reason

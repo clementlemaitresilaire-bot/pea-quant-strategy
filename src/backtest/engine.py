@@ -290,7 +290,7 @@ def run_backtest(
 ) -> BacktestResult:
     universe_df = load_universe().copy()
 
-    price_df = load_all_price_data().copy()
+    price_df = load_all_price_data(auto_refresh=False).copy()
     price_df["date"] = pd.to_datetime(price_df["date"], errors="coerce")
     price_df["adjusted_close"] = pd.to_numeric(price_df["adjusted_close"], errors="coerce")
     price_df = price_df.dropna(subset=["date", "adjusted_close"]).copy()
