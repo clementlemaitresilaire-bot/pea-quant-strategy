@@ -1,41 +1,86 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
+
 import pandas as pd
-import yfinance as yf
 
 from src.data_providers.base import MarketDataProvider
+from src.io.market_data import (
+    PRICE_COLUMNS,
+    normalize_price_dataframe,
+    upsert_price_history_cache,
+)
 
 
 class YahooMarketDataProvider(MarketDataProvider):
     """
-    Yahoo Finance provider using yfinance.
+    Yahoo Finance provider using yfinance as the primary upstream source.
+
+    Design:
+    - Yahoo is the main external source of truth for market data acquisition.
+    - Downloaded data is normalized to the project's canonical schema.
+    - Persistence is handled as an upsert into the local CSV cache.
     """
 
-    def _flatten_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+    def __init__(
+        self,
+        *,
+        max_retries: int = 3,
+        retry_sleep_seconds: float = 1.5,
+        timeout_seconds: int = 30,
+    ) -> None:
+        try:
+            import yfinance as yf
+        except ModuleNotFoundError as exc:
+            raise ModuleNotFoundError(
+                "YahooMarketDataProvider requires the 'yfinance' package."
+            ) from exc
+
+        self.yf = yf
+        self.max_retries = max_retries
+        self.retry_sleep_seconds = retry_sleep_seconds
+        self.timeout_seconds = timeout_seconds
+
+    @staticmethod
+    def _empty_price_frame() -> pd.DataFrame:
+        return pd.DataFrame(columns=PRICE_COLUMNS)
+
+    @staticmethod
+    def _flatten_columns(df: pd.DataFrame) -> pd.DataFrame:
         """
         Flatten yfinance MultiIndex columns if present.
+
+        Typical case:
+        [('Open', 'MC.PA'), ('High', 'MC.PA'), ...] -> ['Open', 'High', ...]
         """
-        if isinstance(df.columns, pd.MultiIndex):
-            flattened = []
-            for col in df.columns:
-                # keep first non-empty meaningful level
-                parts = [str(x) for x in col if x not in ("", None)]
-                flattened.append(parts[0] if parts else "unknown")
-            df.columns = flattened
+        if not isinstance(df.columns, pd.MultiIndex):
+            return df
+
+        flattened: list[str] = []
+        for col in df.columns:
+            parts = [str(x) for x in col if x not in ("", None)]
+            if not parts:
+                flattened.append("unknown")
+                continue
+
+            # Prefer the first level if it matches expected OHLCV naming
+            first = parts[0]
+            flattened.append(first)
+
+        df = df.copy()
+        df.columns = flattened
         return df
 
-    def _normalize_history(self, df: pd.DataFrame, ticker: str) -> pd.DataFrame:
-        if df.empty:
-            return pd.DataFrame(
-                columns=["date", "ticker", "open", "high", "low", "close", "adjusted_close", "volume"]
-            )
+    def _normalize_history(self, raw_df: pd.DataFrame, ticker: str) -> pd.DataFrame:
+        if raw_df is None or raw_df.empty:
+            return self._empty_price_frame()
 
-        df = self._flatten_columns(df)
-        df = df.reset_index().copy()
+        df = self._flatten_columns(raw_df).reset_index().copy()
 
         rename_map = {
             "Date": "date",
+            "Datetime": "date",
             "Open": "open",
             "High": "high",
             "Low": "low",
@@ -45,28 +90,43 @@ class YahooMarketDataProvider(MarketDataProvider):
         }
         df = df.rename(columns=rename_map)
 
-        # if adjusted close is absent, fallback to close
         if "adjusted_close" not in df.columns and "close" in df.columns:
             df["adjusted_close"] = df["close"]
 
         df["ticker"] = ticker
 
-        required_cols = ["date", "ticker", "open", "high", "low", "close", "adjusted_close", "volume"]
-        for col in required_cols:
+        for col in PRICE_COLUMNS:
             if col not in df.columns:
                 df[col] = pd.NA
 
-        df = df[required_cols].copy()
-        df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None, ambiguous="NaT", nonexistent="NaT")
+        df = df[PRICE_COLUMNS].copy()
 
-        # force numeric types
-        numeric_cols = ["open", "high", "low", "close", "adjusted_close", "volume"]
-        for col in numeric_cols:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+        return normalize_price_dataframe(
+            df,
+            source_name=f"yahoo:{ticker}",
+            expected_ticker=ticker,
+        )
 
-        df = df.dropna(subset=["date", "adjusted_close"]).sort_values("date").reset_index(drop=True)
+    def _download_once(
+        self,
+        ticker: str,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> pd.DataFrame:
+        raw_df = self.yf.download(
+            tickers=ticker,
+            start=start_date,
+            end=end_date,
+            interval="1d",
+            auto_adjust=False,
+            actions=False,
+            progress=False,
+            threads=False,
+            group_by="column",
+            timeout=self.timeout_seconds,
+        )
 
-        return df
+        return self._normalize_history(raw_df, ticker)
 
     def fetch_price_history(
         self,
@@ -74,18 +134,28 @@ class YahooMarketDataProvider(MarketDataProvider):
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> pd.DataFrame:
-        history = yf.download(
-            tickers=ticker,
-            start=start_date,
-            end=end_date,
-            interval="1d",
-            auto_adjust=False,
-            progress=False,
-            threads=False,
-            group_by="column",
-        )
+        """
+        Fetch daily price history for one ticker from Yahoo with retries.
+        """
+        last_error: Exception | None = None
 
-        return self._normalize_history(history, ticker)
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                df = self._download_once(
+                    ticker=ticker,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+                return df
+            except Exception as exc:
+                last_error = exc
+                if attempt < self.max_retries:
+                    time.sleep(self.retry_sleep_seconds * attempt)
+
+        raise RuntimeError(
+            f"Yahoo download failed for ticker '{ticker}' after "
+            f"{self.max_retries} attempts."
+        ) from last_error
 
     def fetch_many_price_histories(
         self,
@@ -93,32 +163,44 @@ class YahooMarketDataProvider(MarketDataProvider):
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> pd.DataFrame:
-        frames = []
-        for ticker in tickers:
-            try:
-                df = self.fetch_price_history(ticker, start_date, end_date)
-                if not df.empty:
-                    frames.append(df)
-            except Exception:
-                continue
+        """
+        Fetch many tickers sequentially.
+
+        Sequential download is chosen intentionally for robustness:
+        a single bad ticker should not corrupt the whole batch.
+        """
+        frames: list[pd.DataFrame] = []
+
+        clean_tickers = sorted({str(t).strip() for t in tickers if str(t).strip()})
+        for ticker in clean_tickers:
+            df = self.fetch_price_history(
+                ticker=ticker,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            if not df.empty:
+                frames.append(df)
 
         if not frames:
-            return pd.DataFrame()
+            return self._empty_price_frame()
 
-        return pd.concat(frames, ignore_index=True).sort_values(["ticker", "date"]).reset_index(drop=True)
+        combined = pd.concat(frames, ignore_index=True)
+        return normalize_price_dataframe(combined, source_name="yahoo:batch")
 
     def save_price_history(
         self,
         df: pd.DataFrame,
         output_dir: Path,
     ) -> None:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        for ticker, subdf in df.groupby("ticker"):
-            subdf.to_csv(output_dir / f"{ticker}.csv", index=False)
+        """
+        Persist downloaded Yahoo data into the local CSV cache via upsert.
+
+        This preserves old history and only merges new rows.
+        """
+        upsert_price_history_cache(df, prices_dir=output_dir)
 
 
 if __name__ == "__main__":
     provider = YahooMarketDataProvider()
-    df = provider.fetch_many_price_histories(["AIR.PA", "MC.PA"], start_date="2024-01-01")
-    print(df.dtypes)
-    print(df.head())
+    df = provider.fetch_price_history("MC.PA", start_date="2025-01-01")
+    print(df.tail())
