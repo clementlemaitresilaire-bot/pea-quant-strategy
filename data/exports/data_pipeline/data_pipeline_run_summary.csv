@@ -1,0 +1,22 @@
+section,metric,value
+update,provider,yahoo
+update,requested_count,1
+update,success_count,1
+update,empty_count,0
+update,failed_count,0
+update,report_path,/Users/clement/Desktop/PEA BoursoBank Python/data/exports/data_quality/price_download_report.csv
+diagnostics,tickers_in_cache,73
+diagnostics,required_tickers_missing,3
+diagnostics,load_failed_count,0
+diagnostics,schema_issue_count,0
+diagnostics,stale_count,0
+diagnostics,diagnostics_path,/Users/clement/Desktop/PEA BoursoBank Python/data/exports/data_quality/price_cache_diagnostics.csv
+diagnostics,missing_required_path,/Users/clement/Desktop/PEA BoursoBank Python/data/exports/data_quality/price_cache_missing_required.csv
+prices,rows,303
+prices,tickers_loaded,1
+prices,min_date,2025-01-02
+prices,max_date,2026-03-10
+features,full_rows,303
+features,latest_rows,1
+features,feature_tickers,1
+features,latest_max_date,2026-03-10

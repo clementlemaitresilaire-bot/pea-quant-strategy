@@ -8,6 +8,7 @@ from src.data_providers.factory import (
     get_market_data_provider,
     resolve_market_data_provider_name,
 )
+from src.io.data_quality import export_price_cache_diagnostics
 from src.io.loaders import load_universe
 from src.io.market_data import get_latest_cached_date
 from src.settings import (
@@ -88,8 +89,6 @@ def _resolve_download_window(
     else:
         download_start_ts = requested_start_ts
 
-    # yfinance interprets `end` as exclusive, so we shift by +1 day to make the
-    # public API of update_prices feel inclusive.
     yahoo_end_exclusive_ts = (
         requested_end_ts + pd.Timedelta(days=1)
         if requested_end_ts is not None
@@ -113,6 +112,7 @@ def update_prices(
     provider_name: str | None = None,
     incremental: bool = True,
     overlap_days: int = DEFAULT_OVERLAP_DAYS,
+    run_diagnostics_after_update: bool = True,
 ) -> dict[str, object]:
     """
     Download/update market data from the configured remote provider (Yahoo by default)
@@ -228,12 +228,22 @@ def update_prices(
     empty_count = int((report_df["status"] == "empty").sum())
     failed_count = int((report_df["status"] == "failed").sum())
 
+    diagnostics_summary: dict[str, object] = {}
+    if run_diagnostics_after_update:
+        diagnostics_summary = export_price_cache_diagnostics(prices_dir=prices_dir)
+
     print(f"Provider used      : {resolved_provider}")
     print(f"Tickers requested  : {len(tickers_to_update)}")
     print(f"Tickers success    : {success_count}")
     print(f"Tickers empty      : {empty_count}")
     print(f"Tickers failed     : {failed_count}")
     print(f"Report saved to    : {report_path}")
+
+    if diagnostics_summary:
+        print(f"Cache tickers      : {diagnostics_summary['tickers_in_cache']}")
+        print(f"Missing required   : {diagnostics_summary['required_tickers_missing']}")
+        print(f"Stale tickers      : {diagnostics_summary['stale_count']}")
+        print(f"Diag saved to      : {diagnostics_summary['diagnostics_path']}")
 
     return {
         "provider": resolved_provider,
@@ -245,6 +255,7 @@ def update_prices(
         "empty_tickers": report_df.loc[report_df["status"] == "empty", "ticker"].tolist(),
         "failed_tickers": report_df.loc[report_df["status"] == "failed", "ticker"].tolist(),
         "report_path": str(report_path),
+        "diagnostics": diagnostics_summary,
     }
 
 
