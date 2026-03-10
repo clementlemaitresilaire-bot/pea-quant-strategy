@@ -1,14 +1,14 @@
 indicateur,valeur
 Nombre de mois,87.0
-Proportion de mois positifs,0.5862068965517241
-Meilleur mois,0.12289682570048388
-Pire mois,-0.2010288812765082
+Proportion de mois positifs,0.632183908045977
+Meilleur mois,0.11344649385066852
+Pire mois,-0.1734838364669774
 Nombre d'années,8.0
-Proportion d'années positives,0.875
-Meilleure année,0.221486671058174
-Pire année,-0.17703066951982194
-Meilleur jour,0.08783854904363775
-Pire jour,-0.12461569444368703
-Proportion de jours à alpha positif,0.5089625203693645
-Meilleur jour actif,0.028609687264059547
-Pire jour actif,-0.04607393987072261
+Proportion d'années positives,0.625
+Meilleure année,0.24640629995373664
+Pire année,-0.10825738325074075
+Meilleur jour,0.07775238120734351
+Pire jour,-0.11376409558939804
+Proportion de jours à alpha positif,0.5160239000543183
+Meilleur jour actif,0.019978673066809893
+Pire jour actif,-0.02302712809621088

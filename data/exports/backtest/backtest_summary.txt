@@ -1,25 +1,25 @@
 === BACKTEST SUMMARY ===
 
-Période                    : 2018-12-31 -> 2026-03-09
-Valeur finale portefeuille : 81 460,05 EUR
-Valeur finale benchmark    : 97 600,80 EUR
+Période                    : 2019-01-02 -> 2026-03-10
+Valeur finale portefeuille : 99 923,20 EUR
+Valeur finale benchmark    : 89 081,21 EUR
 
-Performance totale         : 62.92%
-CAGR                       : 6.91%
-Volatilité annualisée      : 17.93%
-Sharpe                     : 0,46
-Max drawdown               : -38.83%
-Performance benchmark      : 95.20%
-CAGR benchmark             : 9.58%
-Performance active         : -32.28%
-Tracking error             : 11.66%
-Information ratio          : -0,25
+Performance totale         : 99.85%
+CAGR                       : 9.94%
+Volatilité annualisée      : 16.54%
+Sharpe                     : 0,66
+Max drawdown               : -36.78%
+Performance benchmark      : 78.16%
+CAGR benchmark             : 8.22%
+Performance active         : 21.68%
+Tracking error             : 6.07%
+Information ratio          : 0,27
 
-Coûts totaux payés         : 7 140,15 EUR
-Turnover total             : 37,27
-Turnover moyen rebalance   : 0,43
-Nombre d'ordres            : 1 601
-Nombre d'ordres exécutés   : 795
+Coûts totaux payés         : 506,74 EUR
+Turnover total             : 2,28
+Turnover moyen rebalance   : 0,08
+Nombre d'ordres            : 2 493
+Nombre d'ordres exécutés   : 673
 
 Conclusion :
-Au global, la stratégie délivre une performance totale de 62.92% sur la période étudiée, soit un CAGR de 6.91%, avec une volatilité annualisée de 17.93% et un Sharpe de 0,46. La surperformance par rapport au benchmark atteint -32.28%, pour un information ratio de -0,25. Le principal coût de cette performance reste un drawdown maximum de -38.83% ainsi qu’un turnover total de 37,27 et des coûts d’exécution cumulés de 7 140,15 EUR. La meilleure contribution par poche provient de Core avec une performance totale de 84.24%, tandis que la poche la plus faible est Opportuniste avec 17.85%. Le comparatif ML vs non-ML montre une amélioration de 3.05% de performance totale et une variation de Sharpe de 0,00. En synthèse, la stratégie apparaît cohérente : elle crée de l’alpha sans dégrader excessivement le profil de risque, mais son efficacité dépend encore fortement de la discipline d’exécution, de la maîtrise des coûts et de la qualité du moteur de sélection.
+Au global, la stratégie délivre une performance totale de 99.85% sur la période étudiée, soit un CAGR de 9.94%, avec une volatilité annualisée de 16.54% et un Sharpe de 0,66. La surperformance par rapport au benchmark atteint 21.68%, pour un information ratio de 0,27. Le principal coût de cette performance reste un drawdown maximum de -36.78% ainsi qu’un turnover total de 2,28 et des coûts d’exécution cumulés de 506,74 EUR. La meilleure contribution par poche provient de Core avec une performance totale de 189.21%, tandis que la poche la plus faible est Monétaire avec 84.34%. Le comparatif ML vs non-ML montre une amélioration de 0.00% de performance totale et une variation de Sharpe de 0,00. En synthèse, la stratégie apparaît cohérente : elle crée de l’alpha sans dégrader excessivement le profil de risque, mais son efficacité dépend encore fortement de la discipline d’exécution, de la maîtrise des coûts et de la qualité du moteur de sélection.

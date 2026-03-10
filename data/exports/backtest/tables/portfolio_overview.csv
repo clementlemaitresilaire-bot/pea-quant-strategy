@@ -1,18 +1,18 @@
 element,valeur
-Date de début,2018-12-31
-Date de fin,2026-03-09
-Valeur finale portefeuille,81460.05162959814
-Valeur finale benchmark,97600.8043284299
-Valeur finale poche core,46053.665726184845
-Valeur finale poche monétaire,23619.795963287354
-Valeur finale poche opportuniste,11769.63423538208
+Date de début,2019-01-02
+Date de fin,2026-03-10
+Valeur finale portefeuille,99923.20122745275
+Valeur finale benchmark,89081.2109168333
+Valeur finale poche core,72281.34565210342
+Valeur finale poche monétaire,27640.11375427246
+Valeur finale poche opportuniste,0.0
 Cash final core,0.0
 Cash final monétaire,0.0
 Cash final opportuniste,0.0
-Nombre final positions core,12.0
+Nombre final positions core,31.0
 Nombre final positions monétaires,3.0
-Nombre final positions opportunistes,2.0
-Coûts cumulés payés,7140.14559215784
-Poids final core,0.5653527686870684
-Poids final monétaire,0.28995557320154225
-Poids final opportuniste,0.1444835106279952
+Nombre final positions opportunistes,0.0
+Coûts cumulés payés,506.7354542946815
+Poids final core,0.7233689950302048
+Poids final monétaire,0.2766135733717732
+Poids final opportuniste,0.0

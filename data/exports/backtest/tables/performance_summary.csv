@@ -1,17 +1,17 @@
 categorie,indicateur,valeur
-Metrics globales,Performance totale,0.6292010325919628
-Metrics globales,CAGR,0.06905436942659637
-Metrics globales,Volatilité annualisée,0.1792598123114113
-Metrics globales,Sharpe,0.46308031650174614
-Metrics globales,Max drawdown,-0.3882606153768463
-Metrics globales,Performance benchmark,0.952016086568598
-Metrics globales,CAGR benchmark,0.09582296832157922
-Metrics globales,Performance active,-0.32281505397663524
-Metrics globales,Tracking error,0.11660739989448989
-Metrics globales,Information ratio,-0.2482032987665898
-Metrics globales,Turnover moyen de rebalance,0.43335989387363394
-Metrics globales,Turnover total,37.26895087313253
-Metrics globales,Coûts totaux payés,7140.145592157841
-Metrics globales,Coûts / capital initial,0.14280291184315683
-Metrics globales,Nombre d'ordres,1601.0
-Metrics globales,Nombre d'ordres exécutés,795.0
+Metrics globales,Performance totale,0.998464024549055
+Metrics globales,CAGR,0.09935412245220254
+Metrics globales,Volatilité annualisée,0.16535206361974827
+Metrics globales,Sharpe,0.6562646507740735
+Metrics globales,Max drawdown,-0.36776557340075866
+Metrics globales,Performance benchmark,0.781624218336666
+Metrics globales,CAGR benchmark,0.08221513739652231
+Metrics globales,Performance active,0.21683980621238907
+Metrics globales,Tracking error,0.06073896445144392
+Metrics globales,Information ratio,0.2685438012778906
+Metrics globales,Turnover moyen de rebalance,0.0785546443525401
+Metrics globales,Turnover total,2.278084686223663
+Metrics globales,Coûts totaux payés,506.7354542946816
+Metrics globales,Coûts / capital initial,0.010134709085893631
+Metrics globales,Nombre d'ordres,2493.0
+Metrics globales,Nombre d'ordres exécutés,673.0

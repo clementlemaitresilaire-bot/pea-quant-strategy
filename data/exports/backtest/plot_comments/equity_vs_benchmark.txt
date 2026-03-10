@@ -1,1 +1,1 @@
-Ce graphique montre la trajectoire de la valeur absolue du portefeuille par rapport au benchmark entre 2018-12-31 et 2026-03-09. Le portefeuille termine sur une performance totale de 62.92% contre 95.20% pour le benchmark, soit une performance active finale de -32.28%.
+Ce graphique montre la trajectoire de la valeur absolue du portefeuille par rapport au benchmark entre 2019-01-02 et 2026-03-10. Le portefeuille termine sur une performance totale de 99.85% contre 78.16% pour le benchmark, soit une performance active finale de 21.68%.
