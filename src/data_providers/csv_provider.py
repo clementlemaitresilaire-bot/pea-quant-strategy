@@ -1,45 +1,34 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pandas as pd
 
 from src.data_providers.base import MarketDataProvider
+from src.io.market_data import (
+    PRICE_COLUMNS,
+    load_all_price_data,
+    load_cached_price_history,
+    normalize_price_dataframe,
+    upsert_price_history_cache,
+)
 from src.settings import RAW_DATA_DIR
 
 
-REQUIRED_PRICE_COLUMNS = {
-    "date",
-    "ticker",
-    "open",
-    "high",
-    "low",
-    "close",
-    "adjusted_close",
-    "volume",
-}
-
-
 class CsvMarketDataProvider(MarketDataProvider):
+    """
+    Local CSV cache provider.
+
+    This provider is deterministic and never calls external APIs.
+    It reads and writes the canonical local cache used by the rest of the project.
+    """
+
     def __init__(self, prices_dir: Path | None = None) -> None:
         self.prices_dir = prices_dir or (RAW_DATA_DIR / "prices")
 
-    def _load_price_csv(self, csv_path: Path) -> pd.DataFrame:
-        if not csv_path.exists():
-            raise FileNotFoundError(f"Price file not found: {csv_path}")
-
-        df = pd.read_csv(csv_path)
-
-        missing = REQUIRED_PRICE_COLUMNS - set(df.columns)
-        if missing:
-            raise ValueError(
-                f"Missing required columns in {csv_path.name}: {sorted(missing)}"
-            )
-
-        df = df.copy()
-        df["date"] = pd.to_datetime(df["date"])
-        df = df.sort_values(["ticker", "date"]).reset_index(drop=True)
-
-        return df
+    @staticmethod
+    def _empty_price_frame() -> pd.DataFrame:
+        return pd.DataFrame(columns=PRICE_COLUMNS)
 
     def fetch_price_history(
         self,
@@ -47,15 +36,12 @@ class CsvMarketDataProvider(MarketDataProvider):
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> pd.DataFrame:
-        path = self.prices_dir / f"{ticker}.csv"
-        df = self._load_price_csv(path)
-
-        if start_date is not None:
-            df = df.loc[pd.to_datetime(df["date"]) >= pd.to_datetime(start_date)]
-        if end_date is not None:
-            df = df.loc[pd.to_datetime(df["date"]) <= pd.to_datetime(end_date)]
-
-        return df.reset_index(drop=True)
+        return load_cached_price_history(
+            ticker=ticker,
+            prices_dir=self.prices_dir,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     def fetch_many_price_histories(
         self,
@@ -64,30 +50,31 @@ class CsvMarketDataProvider(MarketDataProvider):
         end_date: str | None = None,
     ) -> pd.DataFrame:
         if not tickers:
-            return pd.DataFrame()
+            return self._empty_price_frame()
 
-        frames = []
-        for ticker in tickers:
-            try:
-                frames.append(self.fetch_price_history(ticker, start_date, end_date))
-            except FileNotFoundError:
-                continue
+        clean_tickers = sorted({str(t).strip() for t in tickers if str(t).strip()})
+        if not clean_tickers:
+            return self._empty_price_frame()
 
-        if not frames:
-            return pd.DataFrame()
-
-        return pd.concat(frames, ignore_index=True).sort_values(["ticker", "date"]).reset_index(drop=True)
+        return load_all_price_data(
+            prices_dir=self.prices_dir,
+            tickers=clean_tickers,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     def save_price_history(
         self,
         df: pd.DataFrame,
         output_dir: Path,
     ) -> None:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        for ticker, subdf in df.groupby("ticker"):
-            subdf.to_csv(output_dir / f"{ticker}.csv", index=False)
+        normalized = normalize_price_dataframe(df, source_name="csv_provider_save")
+        if normalized.empty:
+            return
+
+        upsert_price_history_cache(normalized, prices_dir=output_dir)
 
 
 if __name__ == "__main__":
     provider = CsvMarketDataProvider()
-    print("csv provider ok")
+    print(type(provider).__name__)
