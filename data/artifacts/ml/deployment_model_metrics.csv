@@ -1,2 +1,2 @@
 model_name,enabled,oof_ic,oof_rmse,n_samples,target_mean,target_std
-deployment_model,False,,,97,-0.05009414609402604,0.048059883526588826
+deployment_model,True,0.21375516695308436,0.04298416084964428,105,-0.06802240220001417,0.05001958337913813

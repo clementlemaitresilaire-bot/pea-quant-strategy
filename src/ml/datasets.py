@@ -374,13 +374,13 @@ def build_rebalance_dataset() -> pd.DataFrame:
             )
 
             tmp["action_side"] = np.where(tmp["raw_score"] >= cross_med, "BUY", "SELL")
+            tmp["bucket"] = "core"
 
             direction = np.where(tmp["action_side"] == "BUY", 1.0, -1.0)
             future_edge = direction * tmp["future_alpha"]
             tmp["target_value"] = future_edge - tmp["cost_ratio_proxy"]
 
-            tmp["bucket"] = "core"
-            keep_cols = ["date", "ticker", "sector", "target_value"] + REBALANCE_FEATURES
+            keep_cols = ["date", "ticker", "target_value"] + REBALANCE_FEATURES
             tmp = tmp[keep_cols].copy()
             rows.append(tmp)
 
@@ -412,13 +412,13 @@ def build_rebalance_dataset() -> pd.DataFrame:
             )
 
             tmp["action_side"] = np.where(tmp["raw_score"] >= cross_med, "BUY", "SELL")
+            tmp["bucket"] = "opportunistic"
 
             direction = np.where(tmp["action_side"] == "BUY", 1.0, -1.0)
             future_edge = direction * tmp["future_alpha"]
             tmp["target_value"] = future_edge - tmp["cost_ratio_proxy"]
 
-            tmp["bucket"] = "opportunistic"
-            keep_cols = ["date", "ticker", "sector", "target_value"] + REBALANCE_FEATURES
+            keep_cols = ["date", "ticker", "target_value"] + REBALANCE_FEATURES
             tmp = tmp[keep_cols].copy()
             rows.append(tmp)
 
