@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -123,6 +124,33 @@ class CostsConfig(BaseModel):
 class DataProviderConfig(BaseModel):
     provider: Literal["csv", "yahoo"] = "yahoo"
 
+    # If True, the app may refresh the local cache automatically when loading prices.
+    auto_update_on_load: bool = True
+
+    # Number of calendar days after which the cache is considered stale.
+    # 0 means "always refresh before use".
+    max_cache_staleness_days: int = Field(1, ge=0)
+
+    # Historical bootstrap date for first full download.
+    default_download_start_date: str = "2018-01-01"
+
+    # When refreshing incrementally, reload a few extra trailing days to capture:
+    # - late Yahoo adjustments
+    # - splits/dividends reflected in adjusted prices
+    # - missing days / partial corrections
+    overlap_days: int = Field(7, ge=0)
+
+    @field_validator("default_download_start_date")
+    @classmethod
+    def validate_default_download_start_date(cls, value: str) -> str:
+        try:
+            date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError(
+                "default_download_start_date must be in YYYY-MM-DD format"
+            ) from exc
+        return value
+
 
 class ReportingConfig(BaseModel):
     export_signals: bool = True
@@ -155,7 +183,9 @@ class AppConfig(BaseModel):
 
         total_weight = sum(s.target_weight for s in sleeves.values())
         if total_weight > 1.0 + 1e-9:
-            raise ValueError(f"Total sleeve target weight cannot exceed 1.0, got {total_weight:.4f}")
+            raise ValueError(
+                f"Total sleeve target weight cannot exceed 1.0, got {total_weight:.4f}"
+            )
 
         return sleeves
 
@@ -168,6 +198,7 @@ def ensure_project_directories() -> None:
         RAW_DATA_DIR / "prices",
         STATE_DATA_DIR,
         EXPORT_DATA_DIR,
+        EXPORT_DATA_DIR / "data_quality",
     ]:
         directory.mkdir(parents=True, exist_ok=True)
 
