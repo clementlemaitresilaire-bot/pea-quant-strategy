@@ -4,6 +4,10 @@ project:
 
 data_provider:
   provider: "yahoo"
+  auto_update_on_load: true
+  max_cache_staleness_days: 1
+  default_download_start_date: "2018-01-01"
+  overlap_days: 7
 
 universe:
   max_names_core: 8
