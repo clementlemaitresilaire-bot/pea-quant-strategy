@@ -1,0 +1,1 @@
+Le Sharpe glissant permet de savoir si la performance a été obtenue efficacement par unité de risque prise.

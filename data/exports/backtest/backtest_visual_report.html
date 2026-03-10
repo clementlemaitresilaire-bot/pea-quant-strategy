@@ -1,0 +1,481 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapport visuel de backtest</title>
+<style>
+:root {
+  --bg: #f6f8fb;
+  --panel: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #1d4ed8;
+  --shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  color: white;
+  padding: 34px 42px;
+}
+header h1 {
+  margin: 0 0 10px 0;
+  font-size: 34px;
+}
+header p {
+  margin: 6px 0;
+  color: #dbeafe;
+}
+main {
+  max-width: 1540px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+.section-head {
+  margin-bottom: 14px;
+}
+.section-head h2 {
+  margin: 0 0 8px 0;
+}
+.section-head p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.kpi {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.kpi .label {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.kpi .value {
+  font-size: 24px;
+  font-weight: 700;
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow);
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 22px;
+}
+@media (max-width: 1150px) {
+  .two-col, .three-col { grid-template-columns: 1fr; }
+}
+.table-wrap {
+  overflow-x: auto;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 640px;
+}
+.data-table th, .data-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 10px;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.data-table th {
+  background: #f8fafc;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+}
+.data-table tr:hover td {
+  background: #f8fbff;
+}
+.plot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+  gap: 22px;
+}
+@media (max-width: 700px) {
+  .plot-grid { grid-template-columns: 1fr; }
+}
+.plot-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.plot-card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+.plot-card img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: white;
+}
+.commentary {
+  margin: 12px 0 4px;
+  color: #334155;
+  line-height: 1.6;
+}
+.summary-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  padding: 18px 20px;
+  line-height: 1.7;
+  color: #1e3a8a;
+}
+.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+footer {
+  color: var(--muted);
+  margin-top: 26px;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Rapport visuel de backtest</h1>
+  <p><strong>Période :</strong> 2018-12-31 → 2026-03-09</p>
+  <p><strong>Objet :</strong> performance, risque, allocation par poches, exécution, coûts et diagnostics ML.</p>
+</header>
+
+<main>
+
+  <section class="panel">
+    <div class="section-head">
+      <h2>Vue d'ensemble</h2>
+      <p>Cette première section donne les indicateurs clés du backtest et permet de juger immédiatement la qualité globale de la stratégie.</p>
+    </div>
+    <section class="kpi-grid">
+      <div class="kpi"><div class="label">Performance totale</div><div class="value">58.56%</div></div><div class="kpi"><div class="label">CAGR</div><div class="value">6.51%</div></div><div class="kpi"><div class="label">Volatilité</div><div class="value">17.85%</div></div><div class="kpi"><div class="label">Sharpe</div><div class="value">0,44</div></div><div class="kpi"><div class="label">Max drawdown</div><div class="value">-39.68%</div></div><div class="kpi"><div class="label">Performance active</div><div class="value">-36.65%</div></div><div class="kpi"><div class="label">Tracking error</div><div class="value">11.77%</div></div><div class="kpi"><div class="label">Information ratio</div><div class="value">-0,28</div></div><div class="kpi"><div class="label">Coûts payés</div><div class="value">5 760,61 EUR</div></div><div class="kpi"><div class="label">Ordres exécutés</div><div class="value">800</div></div>
+    </section>
+  </section>
+
+  <section class="two-col">
+    <section class="panel">
+      <div class="section-head">
+        <h2>Résumé du portefeuille</h2>
+        <p>Valeurs finales, poids de fin de période, cash et structure globale du portefeuille.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>element</th><th>valeur</th></tr></thead>
+        <tbody><tr><td>Date de début</td><td>2018-12-31</td></tr><tr><td>Date de fin</td><td>2026-03-09</td></tr><tr><td>Valeur finale portefeuille</td><td>79 278,23</td></tr><tr><td>Valeur finale benchmark</td><td>97 600,80</td></tr><tr><td>Valeur finale poche core</td><td>45 878,03</td></tr><tr><td>Valeur finale poche monétaire</td><td>25 217,20</td></tr><tr><td>Valeur finale poche opportuniste</td><td>8 124,93</td></tr><tr><td>Cash final core</td><td>0,00</td></tr><tr><td>Cash final monétaire</td><td>0,00</td></tr><tr><td>Cash final opportuniste</td><td>0,00</td></tr><tr><td>Nombre final positions core</td><td>11,00</td></tr><tr><td>Nombre final positions monétaires</td><td>3,00</td></tr><tr><td>Nombre final positions opportunistes</td><td>2,00</td></tr><tr><td>Coûts cumulés payés</td><td>5 760,61</td></tr><tr><td>Poids final core</td><td>0,58</td></tr><tr><td>Poids final monétaire</td><td>0,32</td></tr><tr><td>Poids final opportuniste</td><td>0,10</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <h2>Résumé des performances</h2>
+        <p>Tableau synthétique des indicateurs de performance et de risque du backtest complet.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>categorie</th><th>indicateur</th><th>valeur</th></tr></thead>
+        <tbody><tr><td>Metrics globales</td><td>Performance totale</td><td>58.56%</td></tr><tr><td>Metrics globales</td><td>CAGR</td><td>6.51%</td></tr><tr><td>Metrics globales</td><td>Volatilité annualisée</td><td>17.85%</td></tr><tr><td>Metrics globales</td><td>Sharpe</td><td>44.36%</td></tr><tr><td>Metrics globales</td><td>Max drawdown</td><td>-39.68%</td></tr><tr><td>Metrics globales</td><td>Performance benchmark</td><td>95.20%</td></tr><tr><td>Metrics globales</td><td>CAGR benchmark</td><td>9.58%</td></tr><tr><td>Metrics globales</td><td>Performance active</td><td>-36.65%</td></tr><tr><td>Metrics globales</td><td>Tracking error</td><td>11.77%</td></tr><tr><td>Metrics globales</td><td>Information ratio</td><td>-27.84%</td></tr><tr><td>Metrics globales</td><td>Turnover moyen de rebalance</td><td>37.43%</td></tr><tr><td>Metrics globales</td><td>Turnover total</td><td>3256.61%</td></tr><tr><td>Metrics globales</td><td>Coûts totaux payés</td><td>576061.46%</td></tr><tr><td>Metrics globales</td><td>Coûts / capital initial</td><td>11.52%</td></tr><tr><td>Metrics globales</td><td>Nombre d&#x27;ordres</td><td>168200.00%</td></tr><tr><td>Metrics globales</td><td>Nombre d&#x27;ordres exécutés</td><td>80000.00%</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+  </section>
+
+  <section class="three-col">
+    <section class="panel">
+      <div class="section-head">
+        <h2>Performance par poche</h2>
+        <p>Contribution relative des différentes sleeves en performance, risque et poids final.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>poche</th><th>valeur_initiale</th><th>valeur_finale</th><th>performance_totale</th><th>cagr</th><th>volatilite_annualisee</th><th>max_drawdown</th><th>poids_final_dans_portefeuille</th></tr></thead>
+        <tbody><tr><td>Portefeuille</td><td>50 000,00</td><td>79 278,23</td><td>58.56%</td><td>6.51%</td><td>17.85%</td><td>-39.68%</td><td>100.00%</td></tr><tr><td>Core</td><td>24 997,87</td><td>45 878,03</td><td>83.53%</td><td>8.66%</td><td>40.86%</td><td>-42.78%</td><td>57.87%</td></tr><tr><td>Monétaire</td><td>14 994,15</td><td>25 217,20</td><td>68.18%</td><td>7.37%</td><td>32.51%</td><td>-38.08%</td><td>31.81%</td></tr><tr><td>Opportuniste</td><td>9 987,15</td><td>8 124,93</td><td>-18.65%</td><td>-2.78%</td><td>8233.02%</td><td>-100.00%</td><td>10.25%</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <h2>Diagnostics rendement / risque</h2>
+        <p>Régularité de la stratégie à travers les mois, années, journées et performance active.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>indicateur</th><th>valeur</th></tr></thead>
+        <tbody><tr><td>Nombre de mois</td><td>8700.00%</td></tr><tr><td>Proportion de mois positifs</td><td>62.07%</td></tr><tr><td>Meilleur mois</td><td>14.50%</td></tr><tr><td>Pire mois</td><td>-20.82%</td></tr><tr><td>Nombre d&#x27;années</td><td>800.00%</td></tr><tr><td>Proportion d&#x27;années positives</td><td>75.00%</td></tr><tr><td>Meilleure année</td><td>22.50%</td></tr><tr><td>Pire année</td><td>-18.36%</td></tr><tr><td>Meilleur jour</td><td>8.86%</td></tr><tr><td>Pire jour</td><td>-12.85%</td></tr><tr><td>Proportion de jours à alpha positif</td><td>50.62%</td></tr><tr><td>Meilleur jour actif</td><td>3.00%</td></tr><tr><td>Pire jour actif</td><td>-4.42%</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <h2>Diagnostics de positions</h2>
+        <p>Analyse de la concentration et du niveau moyen d’investissement par poche.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>indicateur</th><th>valeur</th></tr></thead>
+        <tbody><tr><td>Positions finales core</td><td>11,00</td></tr><tr><td>Positions finales monétaires</td><td>3,00</td></tr><tr><td>Positions finales opportunistes</td><td>2,00</td></tr><tr><td>Moyenne positions core</td><td>11,21</td></tr><tr><td>Moyenne positions monétaires</td><td>2,95</td></tr><tr><td>Moyenne positions opportunistes</td><td>1,88</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+  </section>
+
+  <section class="two-col">
+    <section class="panel">
+      <div class="section-head">
+        <h2>Turnover et coûts</h2>
+        <p>Mesure de l’intensité de rotation de la stratégie et de l’impact des coûts de transaction.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>indicateur</th><th>valeur</th></tr></thead>
+        <tbody><tr><td>Turnover total</td><td>32,57</td></tr><tr><td>Turnover moyen quotidien</td><td>0,02</td></tr><tr><td>Turnover moyen sur jours de rebalance</td><td>0,37</td></tr><tr><td>Turnover journalier maximum</td><td>0,94</td></tr><tr><td>Coûts totaux payés</td><td>5 760,61</td></tr><tr><td>Coût moyen par jour</td><td>3,13</td></tr><tr><td>Coût journalier maximum</td><td>178,81</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <h2>Résumé des décisions d’ordres</h2>
+        <p>Vue consolidée des raisons d’exécution ou de rejet des ordres proposés par le moteur.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>execute</th><th>raison_decision</th><th>nombre</th><th>volume_total</th><th>volume_moyen</th></tr></thead>
+        <tbody><tr><td>1,00</td><td>NEW_ENTRY</td><td>312</td><td>898 759,82</td><td>2 880,64</td></tr><tr><td>1,00</td><td>EXIT_NON_TARGET</td><td>228</td><td>853 573,61</td><td>3 743,74</td></tr><tr><td>1,00</td><td>NEW_OPP_ENTRY</td><td>87</td><td>381 577,47</td><td>4 385,95</td></tr><tr><td>1,00</td><td>KEEP_TOP_RANK</td><td>67</td><td>152 295,44</td><td>2 273,07</td></tr><tr><td>1,00</td><td>KEEP_OPP</td><td>51</td><td>189 597,80</td><td>3 717,60</td></tr><tr><td>1,00</td><td>KEEP_BUFFER_ZONE</td><td>33</td><td>77 785,57</td><td>2 357,14</td></tr><tr><td>1,00</td><td>PERMANENT_ETF</td><td>21</td><td>48 549,72</td><td>2 311,89</td></tr><tr><td>1,00</td><td>INIT_PERMANENT_ETF</td><td>1</td><td>3 189,60</td><td>3 189,60</td></tr><tr><td>0,00</td><td>REJECT_SMALL_ORDER</td><td>333</td><td>41 386,50</td><td>124,28</td></tr><tr><td>0,00</td><td>REJECT_DEADBAND</td><td>284</td><td>242 206,68</td><td>852,84</td></tr><tr><td>0,00</td><td>ML_REJECT_REBALANCE</td><td>225</td><td>611 490,50</td><td>2 717,74</td></tr><tr><td>0,00</td><td>REJECT_ZERO_SHARES</td><td>40</td><td>0,00</td><td>0,00</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+  </section>
+
+  
+        <section class="panel">
+          <div class="section-head">
+            <h2>Comparatif ML vs non-ML</h2>
+            <p>Cette section permet de vérifier si la couche ML modifie réellement la stratégie en performance, en risque et en exécution.</p>
+          </div>
+          
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>total_return</th><th>cagr</th><th>annualized_volatility</th><th>sharpe</th><th>max_drawdown</th><th>benchmark_total_return</th><th>benchmark_cagr</th><th>active_return</th><th>tracking_error</th><th>information_ratio</th><th>average_rebalance_turnover</th><th>total_turnover</th><th>total_costs_paid</th><th>total_costs_as_pct_initial</th><th>num_orders</th><th>num_executed_orders</th><th>official_start_date</th><th>official_end_date</th><th>warmup_start_date</th><th>eligible_start_date</th><th>target_backtest_years</th><th>label</th><th>num_orders_history_rows</th><th>num_target_history_rows</th><th>executed_orders_delta_vs_without_ml</th></tr></thead>
+        <tbody><tr><td>59.87%</td><td>6.63%</td><td>17.07%</td><td>0,46</td><td>-38.23%</td><td>95.20%</td><td>9.58%</td><td>-35.33%</td><td>12.07%</td><td>-0,27</td><td>0,42</td><td>36,70</td><td>6 457,79</td><td>0,13</td><td>1 398</td><td>821</td><td>2018-12-31</td><td>2026-03-09</td><td>2018-01-02</td><td>2018-12-31</td><td>10,00</td><td>without_ml</td><td>1 398,00</td><td>1 143,00</td><td>0</td></tr><tr><td>58.56%</td><td>6.51%</td><td>17.85%</td><td>0,44</td><td>-39.68%</td><td>95.20%</td><td>9.58%</td><td>-36.65%</td><td>11.77%</td><td>-0,28</td><td>0,37</td><td>32,57</td><td>5 760,61</td><td>0,12</td><td>1 682</td><td>800</td><td>2018-12-31</td><td>2026-03-09</td><td>2018-01-02</td><td>2018-12-31</td><td>10,00</td><td>with_ml</td><td>1 682,00</td><td>1 118,00</td><td>-21</td></tr></tbody>
+      </table>
+    </div>
+    
+        </section>
+        
+
+  <section class="two-col">
+    <section class="panel">
+      <div class="section-head">
+        <h2>Performances annuelles</h2>
+        <p>Vue annuelle du portefeuille, du benchmark et des poches pour identifier les régimes les plus favorables.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>annee</th><th>performance_portefeuille</th><th>performance_benchmark</th><th>performance_active</th><th>performance_core</th><th>performance_monetaire</th><th>performance_opportuniste</th></tr></thead>
+        <tbody><tr><td>2 018,00</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2 019,00</td><td>20.58%</td><td>34.15%</td><td>-13.57%</td><td>55.08%</td><td>39.30%</td><td>-93.17%</td></tr><tr><td>2 020,00</td><td>-3.07%</td><td>5.16%</td><td>-8.23%</td><td>-18.41%</td><td>-15.03%</td><td>1230.40%</td></tr><tr><td>2 021,00</td><td>22.50%</td><td>37.75%</td><td>-15.26%</td><td>11.06%</td><td>13.18%</td><td>59.47%</td></tr><tr><td>2 022,00</td><td>-18.36%</td><td>-13.05%</td><td>-5.31%</td><td>-2.86%</td><td>-6.87%</td><td>-61.21%</td></tr><tr><td>2 023,00</td><td>1.88%</td><td>14.89%</td><td>-13.01%</td><td>2.71%</td><td>3.79%</td><td>-10.18%</td></tr><tr><td>2 024,00</td><td>9.01%</td><td>2.95%</td><td>6.06%</td><td>-4.51%</td><td>10.72%</td><td>99.04%</td></tr><tr><td>2 025,00</td><td>13.73%</td><td>3.97%</td><td>9.76%</td><td>33.41%</td><td>1.26%</td><td>-26.27%</td></tr><tr><td>2 026,00</td><td>0.90%</td><td>-7.31%</td><td>8.21%</td><td>-4.29%</td><td>10.12%</td><td>5.12%</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <h2>Pires drawdowns</h2>
+        <p>Les épisodes de baisse les plus marqués du portefeuille, classés du plus sévère au moins sévère.</p>
+      </div>
+      
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>date</th><th>valeur_portefeuille</th><th>plus_haut_historique</th><th>drawdown</th></tr></thead>
+        <tbody><tr><td>2020-03-18 00:00:00</td><td>38 483,48</td><td>63 795,72</td><td>-39.68%</td></tr><tr><td>2020-03-23 00:00:00</td><td>38 941,25</td><td>63 795,72</td><td>-38.96%</td></tr><tr><td>2020-03-16 00:00:00</td><td>39 231,04</td><td>63 795,72</td><td>-38.51%</td></tr><tr><td>2020-03-19 00:00:00</td><td>39 820,36</td><td>63 795,72</td><td>-37.58%</td></tr><tr><td>2020-03-17 00:00:00</td><td>40 410,25</td><td>63 795,72</td><td>-36.66%</td></tr><tr><td>2020-03-20 00:00:00</td><td>41 062,44</td><td>63 795,72</td><td>-35.63%</td></tr><tr><td>2020-04-03 00:00:00</td><td>41 233,02</td><td>63 795,72</td><td>-35.37%</td></tr><tr><td>2020-03-12 00:00:00</td><td>41 553,46</td><td>63 795,72</td><td>-34.86%</td></tr><tr><td>2020-04-02 00:00:00</td><td>41 838,26</td><td>63 795,72</td><td>-34.42%</td></tr><tr><td>2020-04-01 00:00:00</td><td>41 950,50</td><td>63 795,72</td><td>-34.24%</td></tr><tr><td>2020-03-13 00:00:00</td><td>42 298,41</td><td>63 795,72</td><td>-33.70%</td></tr><tr><td>2020-03-24 00:00:00</td><td>42 392,05</td><td>63 795,72</td><td>-33.55%</td></tr><tr><td>2020-03-27 00:00:00</td><td>42 540,01</td><td>63 795,72</td><td>-33.32%</td></tr><tr><td>2020-03-30 00:00:00</td><td>42 985,33</td><td>63 795,72</td><td>-32.62%</td></tr><tr><td>2020-03-25 00:00:00</td><td>43 359,27</td><td>63 795,72</td><td>-32.03%</td></tr></tbody>
+      </table>
+    </div>
+    
+    </section>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <h2>Performances mensuelles</h2>
+      <p>Tableau détaillé des performances mensuelles du portefeuille, du benchmark et de chaque poche.</p>
+    </div>
+    
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>mois</th><th>performance_portefeuille</th><th>performance_benchmark</th><th>performance_active</th><th>performance_core</th><th>performance_monetaire</th><th>performance_opportuniste</th></tr></thead>
+        <tbody><tr><td>2018-12</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>2019-01</td><td>3.71%</td><td>7.15%</td><td>-3.44%</td><td>8.78%</td><td>-31.36%</td><td>3.19%</td></tr><tr><td>2019-02</td><td>2.32%</td><td>5.52%</td><td>-3.19%</td><td>21.37%</td><td>4.05%</td><td>-49.93%</td></tr><tr><td>2019-03</td><td>0.63%</td><td>1.75%</td><td>-1.13%</td><td>-7.74%</td><td>2.10%</td><td>108.74%</td></tr><tr><td>2019-04</td><td>2.83%</td><td>3.56%</td><td>-0.73%</td><td>-3.45%</td><td>55.48%</td><td>-42.74%</td></tr><tr><td>2019-05</td><td>-2.38%</td><td>-4.90%</td><td>2.52%</td><td>27.02%</td><td>-5.04%</td><td>-99.19%</td></tr><tr><td>2019-06</td><td>6.51%</td><td>6.98%</td><td>-0.48%</td><td>-25.71%</td><td>4.78%</td><td>23260.04%</td></tr><tr><td>2019-07</td><td>-0.24%</td><td>-1.17%</td><td>0.92%</td><td>12.47%</td><td>1.19%</td><td>-24.24%</td></tr><tr><td>2019-08</td><td>-2.69%</td><td>-1.88%</td><td>-0.81%</td><td>-7.23%</td><td>-2.36%</td><td>-3.68%</td></tr><tr><td>2019-09</td><td>1.65%</td><td>1.43%</td><td>0.22%</td><td>15.17%</td><td>14.62%</td><td>-52.96%</td></tr><tr><td>2019-10</td><td>0.48%</td><td>3.99%</td><td>-3.51%</td><td>-6.93%</td><td>1.53%</td><td>56.88%</td></tr><tr><td>2019-11</td><td>1.60%</td><td>3.39%</td><td>-1.78%</td><td>0.21%</td><td>2.80%</td><td>4.88%</td></tr><tr><td>2019-12</td><td>3.95%</td><td>2.66%</td><td>1.30%</td><td>24.29%</td><td>3.28%</td><td>-89.68%</td></tr><tr><td>2020-01</td><td>-2.83%</td><td>-2.80%</td><td>-0.04%</td><td>1.26%</td><td>-10.58%</td><td>3.83%</td></tr><tr><td>2020-02</td><td>-8.36%</td><td>-8.39%</td><td>0.03%</td><td>-8.18%</td><td>-8.82%</td><td>-5.21%</td></tr><tr><td>2020-03</td><td>-20.82%</td><td>-13.24%</td><td>-7.58%</td><td>-24.19%</td><td>-13.78%</td><td>-19.71%</td></tr><tr><td>2020-04</td><td>14.50%</td><td>10.24%</td><td>4.26%</td><td>1.84%</td><td>12.79%</td><td>747.22%</td></tr><tr><td>2020-05</td><td>7.06%</td><td>9.06%</td><td>-1.99%</td><td>7.76%</td><td>6.30%</td><td>5.75%</td></tr><tr><td>2020-06</td><td>3.08%</td><td>2.82%</td><td>0.26%</td><td>-7.73%</td><td>-8.11%</td><td>115.85%</td></tr><tr><td>2020-07</td><td>0.08%</td><td>-2.00%</td><td>2.07%</td><td>-0.30%</td><td>-0.17%</td><td>1.61%</td></tr><tr><td>2020-08</td><td>3.86%</td><td>3.24%</td><td>0.61%</td><td>15.87%</td><td>14.20%</td><td>-51.82%</td></tr><tr><td>2020-09</td><td>1.05%</td><td>0.24%</td><td>0.80%</td><td>19.47%</td><td>-1.87%</td><td>-90.93%</td></tr><tr><td>2020-10</td><td>-6.16%</td><td>-3.38%</td><td>-2.79%</td><td>-7.32%</td><td>-3.72%</td><td>-3.25%</td></tr><tr><td>2020-11</td><td>7.72%</td><td>12.57%</td><td>-4.85%</td><td>-22.30%</td><td>-1.08%</td><td>2556.12%</td></tr><tr><td>2020-12</td><td>0.98%</td><td>0.97%</td><td>0.00%</td><td>14.97%</td><td>1.01%</td><td>-22.13%</td></tr><tr><td>2021-01</td><td>1.60%</td><td>-3.85%</td><td>5.45%</td><td>-6.64%</td><td>0.91%</td><td>32.19%</td></tr><tr><td>2021-02</td><td>0.89%</td><td>3.51%</td><td>-2.62%</td><td>5.21%</td><td>1.79%</td><td>-11.14%</td></tr><tr><td>2021-03</td><td>4.27%</td><td>3.94%</td><td>0.34%</td><td>18.17%</td><td>3.98%</td><td>-35.91%</td></tr><tr><td>2021-04</td><td>0.26%</td><td>5.65%</td><td>-5.39%</td><td>5.02%</td><td>-9.80%</td><td>2.28%</td></tr><tr><td>2021-05</td><td>1.69%</td><td>4.79%</td><td>-3.09%</td><td>12.73%</td><td>0.37%</td><td>-57.29%</td></tr><tr><td>2021-06</td><td>1.19%</td><td>2.68%</td><td>-1.49%</td><td>-2.96%</td><td>2.66%</td><td>55.85%</td></tr><tr><td>2021-07</td><td>-0.86%</td><td>2.64%</td><td>-3.49%</td><td>-3.67%</td><td>-0.11%</td><td>23.17%</td></tr><tr><td>2021-08</td><td>1.32%</td><td>-2.72%</td><td>4.04%</td><td>0.76%</td><td>2.37%</td><td>2.00%</td></tr><tr><td>2021-09</td><td>-4.05%</td><td>-5.36%</td><td>1.31%</td><td>-4.38%</td><td>-2.78%</td><td>-5.26%</td></tr><tr><td>2021-10</td><td>5.23%</td><td>6.52%</td><td>-1.29%</td><td>-2.35%</td><td>5.31%</td><td>62.08%</td></tr><tr><td>2021-11</td><td>-3.48%</td><td>3.64%</td><td>-7.11%</td><td>-5.76%</td><td>-1.39%</td><td>2.74%</td></tr></tbody>
+      </table>
+    </div>
+    
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <h2>Figures et commentaires</h2>
+      <p>Chaque figure ci-dessous est accompagnée d’un commentaire d’interprétation pour rendre le rapport directement exploitable.</p>
+    </div>
+    <div class="plot-grid">
+      
+            <section class="plot-card">
+              <h3>Valeur du portefeuille vs benchmark</h3>
+              <img src="plots/equity_vs_benchmark.png" alt="Valeur du portefeuille vs benchmark">
+              <p class="commentary">Ce graphique montre la trajectoire de la valeur absolue du portefeuille par rapport au benchmark entre 2018-12-31 et 2026-03-09. Le portefeuille termine sur une performance totale de 58.56% contre 95.20% pour le benchmark, soit une performance active finale de -36.65%.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Performance cumulée rebasée</h3>
+              <img src="plots/indexed_equity_vs_benchmark.png" alt="Performance cumulée rebasée">
+              <p class="commentary">La vue rebasée en base 100 permet de comparer la dynamique de performance indépendamment du capital de départ. C’est la meilleure lecture pour voir si la surperformance est régulière ou concentrée sur quelques périodes.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Performance active cumulée</h3>
+              <img src="plots/cumulative_active_return.png" alt="Performance active cumulée">
+              <p class="commentary">La performance active cumulée se termine à -25.21%. Cette figure permet de juger si l’alpha est structurel ou simplement ponctuel.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Drawdown</h3>
+              <img src="plots/drawdown.png" alt="Drawdown">
+              <p class="commentary">Le drawdown maximum atteint -39.68%. Cette figure est essentielle pour mesurer le coût psychologique et financier de la stratégie en phase défavorable.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Performance glissante 252 jours</h3>
+              <img src="plots/rolling_252d_return.png" alt="Performance glissante 252 jours">
+              <p class="commentary">Les performances glissantes sur un an permettent de repérer les périodes de forte création de valeur et celles où la stratégie perd temporairement son avantage.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Volatilité glissante 252 jours</h3>
+              <img src="plots/rolling_252d_volatility.png" alt="Volatilité glissante 252 jours">
+              <p class="commentary">La volatilité glissante annualisée montre si le profil de risque est stable ou s’il varie fortement selon les régimes de marché.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Sharpe glissant 252 jours</h3>
+              <img src="plots/rolling_252d_sharpe.png" alt="Sharpe glissant 252 jours">
+              <p class="commentary">Le Sharpe glissant permet de savoir si la performance a été obtenue efficacement par unité de risque prise.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Performance active mensuelle</h3>
+              <img src="plots/monthly_active_return.png" alt="Performance active mensuelle">
+              <p class="commentary">La performance active mensuelle donne une vue plus exploitable que le bruit quotidien pour juger de la régularité de l’alpha.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Heatmap des rendements mensuels</h3>
+              <img src="plots/monthly_returns_heatmap.png" alt="Heatmap des rendements mensuels">
+              <p class="commentary">La heatmap mensuelle synthétise très rapidement la régularité de la performance, la fréquence des mois négatifs et la concentration des gains.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Valeur des poches</h3>
+              <img src="plots/sleeve_values.png" alt="Valeur des poches">
+              <p class="commentary">Cette figure décompose la contribution des différentes poches à la croissance de la valeur globale du portefeuille.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Poids des poches</h3>
+              <img src="plots/sleeve_weights.png" alt="Poids des poches">
+              <p class="commentary">La vue empilée des poids permet de comprendre comment l’allocation entre les poches évolue au cours du backtest.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Nombre de positions</h3>
+              <img src="plots/positions_counts.png" alt="Nombre de positions">
+              <p class="commentary">Le nombre de positions par poche permet d’analyser la concentration, la diversification effective et l’activité réelle de chaque sleeve.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Turnover et coûts</h3>
+              <img src="plots/turnover_and_costs.png" alt="Turnover et coûts">
+              <p class="commentary">Le turnover mensuel et les coûts mensuels sont séparés pour rester lisibles. Cette figure aide à identifier les épisodes de sur-rotation et les périodes où l’exécution détruit du rendement.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Coûts cumulés</h3>
+              <img src="plots/cumulative_costs.png" alt="Coûts cumulés">
+              <p class="commentary">Les coûts cumulés mesurent la part de performance brute qui a été abandonnée en frais d’exécution au fil du temps.</p>
+            </section>
+            
+            <section class="plot-card">
+              <h3>Raisons des décisions</h3>
+              <img src="plots/orders_by_reason.png" alt="Raisons des décisions">
+              <p class="commentary">Le détail des raisons de décision est particulièrement utile pour diagnostiquer les freins du moteur : deadband, coûts, alpha hurdle ou sorties forcées.</p>
+            </section>
+            
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <h2>Résumé global en français</h2>
+      <p>Conclusion rédigée automatiquement à partir des résultats du backtest.</p>
+    </div>
+    <div class="summary-box">
+      Au global, la stratégie délivre une performance totale de 58.56% sur la période étudiée, soit un CAGR de 6.51%, avec une volatilité annualisée de 17.85% et un Sharpe de 0,44. La surperformance par rapport au benchmark atteint -36.65%, pour un information ratio de -0,28. Le principal coût de cette performance reste un drawdown maximum de -39.68% ainsi qu’un turnover total de 32,57 et des coûts d’exécution cumulés de 5 760,61 EUR. La meilleure contribution par poche provient de Core avec une performance totale de 83.53%, tandis que la poche la plus faible est Opportuniste avec -18.65%. Le comparatif ML vs non-ML montre une amélioration de -1.32% de performance totale et une variation de Sharpe de -0,02. En synthèse, la stratégie apparaît cohérente : elle crée de l’alpha sans dégrader excessivement le profil de risque, mais son efficacité dépend encore fortement de la discipline d’exécution, de la maîtrise des coûts et de la qualité du moteur de sélection.
+    </div>
+  </section>
+
+  <footer>
+    Rapport généré automatiquement depuis la chaîne d’exports de backtest.
+  </footer>
+</main>
+</body>
+</html>

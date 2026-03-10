@@ -1,0 +1,1 @@
+La volatilité glissante annualisée montre si le profil de risque est stable ou s’il varie fortement selon les régimes de marché.

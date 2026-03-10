@@ -1,0 +1,2 @@
+model_name,enabled,oof_auc,n_samples,positive_rate
+trade_quality_model,True,0.5409980021152359,7546,0.4560031804929764

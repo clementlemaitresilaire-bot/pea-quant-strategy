@@ -1,0 +1,1 @@
+La vue empilée des poids permet de comprendre comment l’allocation entre les poches évolue au cours du backtest.

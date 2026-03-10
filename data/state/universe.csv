@@ -1,0 +1,74 @@
+ticker,name,isin,exchange,sector,industry,country,pea_eligible,ttf_flag,liquidity_bucket,spread_proxy,core_allowed,opp_allowed,benchmark_member,active
+AC.PA,Accor,FR0000120404,Euronext Paris,Consumer,Hotels,FR,true,true,high,0.0005,true,true,true,true
+ACA.PA,Credit Agricole,FR0000045072,Euronext Paris,Financials,Banks,FR,true,true,high,0.0005,true,true,true,true
+ADP.PA,Groupe ADP,FR0010340141,Euronext Paris,Industrials,Transport Infrastructure,FR,true,true,high,0.0005,true,true,true,true
+AF.PA,Air France-KLM,FR001400J770,Euronext Paris,Industrials,Airlines,FR,true,true,standard,0.0010,false,true,true,true
+AI.PA,Air Liquide,FR0000120073,Euronext Paris,Materials,Industrial Gases,FR,true,true,high,0.0005,true,true,true,true
+AIR.PA,Airbus,NL0000235190,Euronext Paris,Industrials,Aerospace,NL,true,false,high,0.0005,true,true,true,true
+AKE.PA,Arkema,FR0010313833,Euronext Paris,Materials,Chemicals,FR,true,true,high,0.0005,true,true,true,true
+ALO.PA,Alstom,FR0010220475,Euronext Paris,Industrials,Rail Equipment,FR,true,true,high,0.0005,true,true,true,true
+AMUN.PA,Amundi,FR0004125920,Euronext Paris,Financials,Asset Management,FR,true,true,high,0.0005,true,true,true,true
+BEN.PA,Beneteau,FR0000035164,Euronext Paris,Consumer,Leisure Products,FR,true,true,lower,0.0015,false,true,false,true
+BN.PA,Danone,FR0000120644,Euronext Paris,Consumer,Food,FR,true,true,high,0.0005,true,true,true,true
+BNP.PA,BNP Paribas,FR0000131104,Euronext Paris,Financials,Banks,FR,true,true,high,0.0005,true,true,true,true
+BVI.PA,Bureau Veritas,FR0006174348,Euronext Paris,Industrials,Testing & Certification,FR,true,true,high,0.0005,true,true,true,true
+CA.PA,Carrefour,FR0000120172,Euronext Paris,Consumer,Food Retail,FR,true,true,high,0.0005,true,true,true,true
+CAP.PA,Capgemini,FR0000125338,Euronext Paris,Technology,IT Services,FR,true,true,high,0.0005,true,true,true,true
+COFA.PA,Coface,FR0010667147,Euronext Paris,Financials,Insurance Services,FR,true,true,standard,0.0010,true,true,false,true
+CS.PA,AXA,FR0000120628,Euronext Paris,Financials,Insurance,FR,true,true,high,0.0005,true,true,true,true
+DEC.PA,JCDecaux,FR0000077919,Euronext Paris,Communication,Advertising,FR,true,true,standard,0.0010,true,true,false,true
+DG.PA,Vinci,FR0000125486,Euronext Paris,Industrials,Construction,FR,true,true,high,0.0005,true,true,true,true
+DSY.PA,Dassault Systemes,FR0014003TT8,Euronext Paris,Technology,Software,FR,true,true,high,0.0005,true,true,true,true
+EDEN.PA,Edenred,FR0010908533,Euronext Paris,Financials,Payments,FR,true,true,high,0.0005,true,true,true,true
+EDF.PA,EDF,FR0010242511,Euronext Paris,Utilities,Electric Utilities,FR,true,true,high,0.0005,true,true,true,true
+EL.PA,EssilorLuxottica,FR0000121667,Euronext Paris,Healthcare,Optical,FR,true,true,high,0.0005,true,true,true,true
+ELIS.PA,Elis,FR0012435121,Euronext Paris,Industrials,Business Services,FR,true,true,standard,0.0010,true,true,false,true
+ENGI.PA,Engie,FR0010208488,Euronext Paris,Utilities,Utilities,FR,true,true,high,0.0005,true,true,true,true
+EN.PA,Bouygues,FR0000120503,Euronext Paris,Industrials,Construction,FR,true,true,high,0.0005,true,true,true,true
+ERF.PA,Eurofins Scientific,FR0014000MR3,Euronext Paris,Healthcare,Diagnostics,FR,true,true,standard,0.0010,true,true,true,true
+FDJ.PA,FDJ United,FR0013451333,Euronext Paris,Consumer,Gaming,FR,true,true,high,0.0005,true,true,true,true
+FR.PA,Valeo,FR0013176526,Euronext Paris,Consumer,Auto Components,FR,true,true,high,0.0005,true,true,true,true
+GET.PA,Getlink,FR0010533075,Euronext Paris,Industrials,Transport Infrastructure,FR,true,true,standard,0.0010,true,true,true,true
+GLE.PA,Societe Generale,FR0000130809,Euronext Paris,Financials,Banks,FR,true,true,high,0.0005,true,true,true,true
+GTT.PA,Gaztransport & Technigaz,FR0011726835,Euronext Paris,Energy,Energy Equipment,FR,true,true,standard,0.0010,true,true,false,true
+HO.PA,Thales,FR0000121329,Euronext Paris,Industrials,Defense,FR,true,true,high,0.0005,true,true,true,true
+IPN.PA,Ipsen,FR0010259150,Euronext Paris,Healthcare,Pharma,FR,true,true,standard,0.0010,true,true,true,true
+KER.PA,Kering,FR0000121485,Euronext Paris,Consumer,Luxury,FR,true,true,high,0.0005,true,true,true,true
+LR.PA,Legrand,FR0010307819,Euronext Paris,Industrials,Electrical Equipment,FR,true,true,high,0.0005,true,true,true,true
+MC.PA,LVMH,FR0000121014,Euronext Paris,Consumer,Luxury,FR,true,true,high,0.0005,true,true,true,true
+ML.PA,Michelin,FR001400AJ45,Euronext Paris,Consumer,Auto Components,FR,true,true,high,0.0005,true,true,true,true
+NEX.PA,Nexans,FR0000044448,Euronext Paris,Industrials,Electrical Equipment,FR,true,true,standard,0.0010,true,true,false,true
+NK.PA,Imerys,FR0000120859,Euronext Paris,Materials,Specialty Materials,FR,true,true,standard,0.0010,true,true,false,true
+ORA.PA,Orange,FR0000133308,Euronext Paris,Communication,Telecom,FR,true,true,high,0.0005,true,true,true,true
+OR.PA,L'Oreal,FR0000120321,Euronext Paris,Consumer,Beauty,FR,true,true,high,0.0005,true,true,true,true
+PUB.PA,Publicis,FR0000130577,Euronext Paris,Communication,Advertising,FR,true,true,high,0.0005,true,true,true,true
+RCO.PA,Remy Cointreau,FR0000130395,Euronext Paris,Consumer,Beverages,FR,true,true,standard,0.0010,true,true,false,true
+RI.PA,Pernod Ricard,FR0000120693,Euronext Paris,Consumer,Beverages,FR,true,true,high,0.0005,true,true,true,true
+RMS.PA,Hermes,FR0000052292,Euronext Paris,Consumer,Luxury,FR,true,true,high,0.0005,true,true,true,true
+RNO.PA,Renault,FR0000131906,Euronext Paris,Consumer,Automobiles,FR,true,true,high,0.0005,true,true,true,true
+RUI.PA,Rubis,FR0013269123,Euronext Paris,Energy,Energy Distribution,FR,true,true,standard,0.0010,true,true,false,true
+RXL.PA,Rexel,FR0010451203,Euronext Paris,Industrials,Electrical Distribution,FR,true,true,standard,0.0010,true,true,true,true
+SAN.PA,Sanofi,FR0000120578,Euronext Paris,Healthcare,Pharma,FR,true,true,high,0.0005,true,true,true,true
+SCR.PA,Scor,FR0010411983,Euronext Paris,Financials,Reinsurance,FR,true,true,standard,0.0010,true,true,false,true
+SESG.PA,SES,LU0088087324,Euronext Paris,Communication,Satellite,LU,true,false,standard,0.0010,true,true,false,true
+SGO.PA,Saint-Gobain,FR0000125007,Euronext Paris,Industrials,Building Materials,FR,true,true,high,0.0005,true,true,true,true
+SPIE.PA,Spie,FR0012757854,Euronext Paris,Industrials,Engineering Services,FR,true,true,standard,0.0010,true,true,false,true
+STMPA.PA,STMicroelectronics,NL0000226223,Euronext Paris,Technology,Semiconductors,NL,true,false,high,0.0005,true,true,true,true
+SU.PA,Schneider Electric,FR0000121972,Euronext Paris,Industrials,Electrical Equipment,FR,true,true,high,0.0005,true,true,true,true
+SW.PA,Sodexo,FR0000121220,Euronext Paris,Industrials,Services,FR,true,true,standard,0.0010,true,true,true,true
+TEP.PA,Teleperformance,FR0000051807,Euronext Paris,Industrials,Business Services,FR,true,true,high,0.0005,true,true,true,true
+TFI.PA,TF1,FR0000054900,Euronext Paris,Communication,Media,FR,true,true,standard,0.0010,true,true,false,true
+TTE.PA,TotalEnergies,FR0000120271,Euronext Paris,Energy,Oil & Gas,FR,true,true,high,0.0005,true,true,true,true
+UBI.PA,Ubisoft,FR0000054470,Euronext Paris,Communication,Video Games,FR,true,true,standard,0.0010,false,true,false,true
+URW.AS,Unibail-Rodamco-Westfield,FR0013326246,Euronext Amsterdam,Real Estate,REIT,FR,true,true,standard,0.0010,true,true,true,true
+VIE.PA,Veolia,FR0000124141,Euronext Paris,Utilities,Environmental Services,FR,true,true,high,0.0005,true,true,true,true
+VIV.PA,Vivendi,FR0000127771,Euronext Paris,Communication,Media,FR,true,true,standard,0.0010,true,true,true,true
+VK.PA,Vallourec,FR0013506730,Euronext Paris,Energy,Steel Pipes,FR,true,true,standard,0.0010,false,true,false,true
+WLN.PA,Worldline,FR0011981968,Euronext Paris,Technology,Payments,FR,true,true,standard,0.0010,true,true,true,true
+PUST.PA,Amundi PEA Nasdaq-100 UCITS ETF,FR0011871110,Euronext Paris,ETF,Nasdaq 100,FR,True,False,high,0.0005,False,True,False,True
+PANX.PA,Amundi PEA US Tech Screened UCITS ETF,FR0013412269,Euronext Paris,ETF,US Technology,FR,True,False,high,0.0005,False,True,False,True
+PINR.PA,Amundi PEA Inde MSCI India UCITS ETF,FR0011869320,Euronext Paris,ETF,India Equities,FR,True,False,standard,0.0010,False,True,False,True
+PAEEM.PA,Amundi PEA Emerging Markets ESG Transition UCITS ETF,FR0013412020,Euronext Paris,ETF,Emerging Markets,FR,True,False,high,0.0005,False,True,False,True
+PAASI.PA,Amundi PEA MSCI Emerging Asia ESG Leaders UCITS ETF,FR0013412012,Euronext Paris,ETF,Emerging Asia,FR,True,False,standard,0.0010,False,True,False,True
+PALAT.PA,Amundi PEA MSCI Emerging Latin America ESG Leaders UCITS ETF,FR0013412004,Euronext Paris,ETF,Emerging LatAm,FR,True,False,standard,0.0010,False,True,False,True
+PLEM.PA,Amundi PEA MSCI Emerging EMEA ESG Leaders UCITS ETF,FR0011440478,Euronext Paris,ETF,Emerging EMEA,FR,True,False,standard,0.0010,False,True,False,True

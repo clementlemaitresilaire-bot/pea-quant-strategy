@@ -1,0 +1,1 @@
+Les coûts cumulés mesurent la part de performance brute qui a été abandonnée en frais d’exécution au fil du temps.

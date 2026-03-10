@@ -1,0 +1,2 @@
+model_name,enabled,oof_auc,n_samples,positive_rate
+deployment_model,False,0.4537037037037038,105,0.4380952380952381
